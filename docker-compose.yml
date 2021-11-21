@@ -2,20 +2,32 @@
 
 version: '3.8'
 services:
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+
   web:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ./app
+      # dockerfile: Dockerfile.web
     command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
     # containers are sharing the same file at root directory
     volumes:
-      - .:/lauretta
+      - ./app:/lauretta
+      - ./config:/config
     expose:
       - 8000
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://fastapi_traefik:fastapi_traefik@db:5432/fastapi_traefik
+    env_file:
+      - .env
     depends_on:
       - db
     labels:
@@ -24,40 +36,33 @@ services:
       
   fair:
     build:
-      context: .
-      dockerfile: Dockerfile.fair
+      context: ./FairMOT
+      # dockerfile: Dockerfile.fair
     command: bash -c 'python3 src/track.py mot'
     volumes:
-      - .:/lauretta
+      - ./FairMOT:/lauretta
+      - ./config:/config
+      - ./videos:/videos
     ports:
       - "100:100"
     depends_on:
+      - web
       - db
 
   monoloco:
     build:
-      context: .
-      dockerfile: Dockerfile.monoloco
-    command: bash -c 'python3 -m monoloco.run predict docs/frame0032.jpg --activities social_distance --output_types front bird'
+      context: ./monoloco
+      # dockerfile: Dockerfile.monoloco
+    command: bash -c 'python3 -m monoloco.run predict --webcam /videos/fastapidemoclip.mp4 --activities social_distance --output_types multi'
     volumes:
-      - .:/lauretta
+      - ./monoloco:/lauretta
+      - ./config:/config
+      - ./videos:/videos
     ports:
       - "200:200"
     depends_on:
+      - web
       - db
-
-  db:
-    image: postgres:13-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    expose:
-      - 5432
-    environment:
-      - POSTGRES_USER=fastapi_traefik
-      - POSTGRES_PASSWORD=fastapi_traefik
-      - POSTGRES_DB=fastapi_traefik
-    ports:
-      - "5432:5432"
 
   traefik:
     image: traefik:v2.2

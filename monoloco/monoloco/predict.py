@@ -238,30 +238,29 @@ def predict(args):
 
                     if 'social_distance' in args.activities:
                         dic_out = net.social_distance(dic_out, args)
-
-                        url = 'http://web:8000/add_person_instance/'
-
-                        camera_to_person_xyz = dic_out['xyz_pred']
-
-                        personID = 2
-                        for xyz in camera_to_person_xyz:
-                            x = xyz[0]
-                            # y = xyz[1]
-                            z = xyz[2]
-
-                            person_instance_obj = {
-                                        "id": 0,
-                                        "name": f"PersonInstance{personID}",
-                                        "x": x,
-                                        "z": z
-                            }
-
-                            x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-                            
-                            personID += 1
-
                     if 'raise_hand' in args.activities:
                         dic_out = net.raising_hand(dic_out, keypoints)
+
+                    url = 'http://web:8000/add_person_instance/'
+
+                    camera_to_person_xyz = dic_out['xyz_pred']
+
+                    personID = 2
+                    for xyz in camera_to_person_xyz:
+                        x = xyz[0]
+                        # y = xyz[1]
+                        z = xyz[2]
+
+                        person_instance_obj = {
+                                    "id": 0,
+                                    "name": f"PersonInstance{personID}",
+                                    "x": x,
+                                    "z": z
+                        }
+
+                        x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                        
+                        personID += 1
 
                 else:
                     LOG.info("Prediction with MonStereo")

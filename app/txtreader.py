@@ -1,7 +1,7 @@
 
 def txtreader():
 
-    f = open("../docs/cameras.txt", "r")
+    f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
     f.close()
 

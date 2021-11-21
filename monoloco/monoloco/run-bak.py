@@ -140,9 +140,7 @@ def main():
     args = cli()
     if args.command == 'predict':
         if args.webcam:
-            # from .visuals.webcam import webcam
-            # webcam(args)
-            from .visuals.webcam_lauretta import webcam
+            from .visuals.webcam import webcam
             webcam(args)
         else:
             from .predict import predict

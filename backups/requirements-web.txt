@@ -1,0 +1,14 @@
+asyncpg==0.22.0
+fastapi==0.63.0
+ormar==0.10.5
+psycopg2-binary==2.8.6
+uvicorn==0.13.4
+yacs==0.1.8
+PyYAML==5.4.1
+requests==2.26.0
+progress
+openpyxl
+Pillow==8.3.2
+fvcore
+llvmlite==0.36.0
+mccabe==0.6.1

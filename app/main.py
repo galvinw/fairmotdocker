@@ -103,7 +103,7 @@ async def shutdown():
 
 async def camerareader():
 
-    f = open("../docs/cameras.txt", "r")
+    f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
     f.close()
     await Cameras.objects.delete(each=True)
@@ -119,7 +119,7 @@ async def camerareader():
 
 async def zonereader():
 
-    f = open("../docs/zones.txt", "r")
+    f = open("/config/zones.txt", "r")
     zone_list = f.readlines()
     f.close()
     print("Zone CSV Length: {}",str(len(zone_list)))
