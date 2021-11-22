@@ -31,7 +31,7 @@ class User(ormar.Model):
     id: int = ormar.Integer(primary_key=True)
     email: str = ormar.String(max_length=128, unique=True, nullable=False)
     active: bool = ormar.Boolean(default=True, nullable=False)
-
+    create_at: datetime = ormar.DateTime(default=datetime.now) 
 
 class Zones(ormar.Model):
     class Meta(BaseMeta):
@@ -41,7 +41,7 @@ class Zones(ormar.Model):
     camera_id: int = ormar.Integer(nullable=False, default=1)
     x: int = ormar.Integer(nullable=False, default=800)
     y: int = ormar.Integer(nullable=False, default=600)
-
+    create_at: datetime = ormar.DateTime(default=datetime.now) 
 
 class Cameras(ormar.Model):
     class Meta(BaseMeta):
@@ -54,29 +54,31 @@ class Cameras(ormar.Model):
     long:float = ormar.Float(nullable=True)
     camera_shift_time: int = ormar.Integer( default=0)
     lastchange: datetime = ormar.DateTime(default=datetime.now) 
-
+    create_at: datetime = ormar.DateTime(default=datetime.now) 
 
 class PersonInstance(ormar.Model):
     class Meta(BaseMeta):
         tablename = "person_instance"
     id: int = ormar.Integer(primary_key=True)
     name: str = ormar.String(max_length=128,nullable=False, default="PersonInstance")
-
+    x:float = ormar.Float(nullable=True)
+    z:float = ormar.Float(nullable=True)
+    create_at: datetime = ormar.DateTime(default=datetime.now) 
 
 class Person(ormar.Model):
     class Meta(BaseMeta):
         tablename = "person"
     id: int = ormar.Integer(primary_key=True)
     name: str = ormar.String(max_length=128,nullable=False, default="Person")
-
+    create_at: datetime = ormar.DateTime(default=datetime.now) 
 
 class Zone_Status(ormar.Model):
     class Meta(BaseMeta):
         tablename = "zone_status"
     id: int = ormar.Integer(primary_key=True)
-    create_at: datetime = ormar.DateTime(default=datetime.now) 
     zone_id: str = ormar.Integer(nullable=False, default=1)
     number: str = ormar.Integer(nullable=False, default=1)
+    create_at: datetime = ormar.DateTime(default=datetime.now) 
 
 
 

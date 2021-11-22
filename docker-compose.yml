@@ -1,49 +1,69 @@
 # docker-compose.yml
 
 version: '3.8'
-
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
-    volumes:
-      - .:/app
-    expose:
-      - 8000
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://fastapi_traefik:fastapi_traefik@db:5432/fastapi_traefik
-    depends_on:
-      - db
-    labels:
-      - "traefik.enable=false"
-      - "traefik.http.routers.fastapi.rule=Host(`fastapi.localhost`)"
-  fair:
-    build:
-      context: .
-      dockerfile: Dockerfile.fair
-    command: bash -c 'python3 src/track.py mot'
-    volumes:
-      - .:/FairMOT
-    ports:
-      - "100:100"
-    depends_on:
-      - db
   db:
     image: postgres:13-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     expose:
       - 5432
-    environment:
-      - POSTGRES_USER=fastapi_traefik
-      - POSTGRES_PASSWORD=fastapi_traefik
-      - POSTGRES_DB=fastapi_traefik
+    env_file:
+      - .env
     ports:
       - "5432:5432"
+
+  web:
+    build:
+      context: ./app
+      # dockerfile: Dockerfile.web
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
+    # containers are sharing the same file at root directory
+    volumes:
+      - ./app:/lauretta
+      - ./config:/config
+    expose:
+      - 8000
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    labels:
+      - "traefik.enable=false"
+      - "traefik.http.routers.fastapi.rule=Host(`fastapi.localhost`)"
+      
+  fair:
+    build:
+      context: ./FairMOT
+      # dockerfile: Dockerfile.fair
+    command: bash -c 'python3 src/track.py mot'
+    volumes:
+      - ./FairMOT:/lauretta
+      - ./config:/config
+      - ./videos:/videos
+    ports:
+      - "100:100"
+    depends_on:
+      - web
+      - db
+
+  monoloco:
+    build:
+      context: ./monoloco
+      # dockerfile: Dockerfile.monoloco
+    command: bash -c 'python3 -m monoloco.run predict --webcam /videos/fastapidemoclip.mp4 --activities social_distance --output_types multi'
+    volumes:
+      - ./monoloco:/lauretta
+      - ./config:/config
+      - ./videos:/videos
+    ports:
+      - "200:200"
+    depends_on:
+      - web
+      - db
+
   traefik:
     image: traefik:v2.2
     ports:

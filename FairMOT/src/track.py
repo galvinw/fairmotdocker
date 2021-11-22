@@ -45,7 +45,7 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
 def eval_prop():
     opt = options().init()
     opt.task = 'mot'
-    f = open("cameras.txt", "r")
+    f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
     f.close()
     tracker = JDETracker(opt, frame_rate=30)
@@ -64,7 +64,11 @@ def eval_prop():
         camera_shift_time = int(element[6])
         prev_time = time.time()
 
-        cap = cv2.VideoCapture(cameraIP)
+        if ".mp4" in cameraIP:
+            print(f"Using demo {cameraIP} files...")
+            cap = cv2.VideoCapture(cameraIP)
+        else:
+            cap = cv2.VideoCapture(cameraIP)
 
         timer = Timer()
         results = []

@@ -56,9 +56,6 @@ async def update_zone_status(zone_status: Zone_Status):
     await Zone_Status.objects.create(zone_id=int(zone_dict['zone_id']),number=int(zone_dict['number']))
     return zone_dict
 
-
-
-
 @app.post("/add_person/", response_model=Person)
 async def add_person(person: Person):
     person_json = person.json()
@@ -66,6 +63,14 @@ async def add_person(person: Person):
 
     await Person.objects.get_or_create(name=person['name'])
     return person_dict
+
+@app.post("/add_person_instance/")
+async def add_person_instance(person_instance: PersonInstance):
+    person_instance_json = person_instance.json()
+    person_instance_dict = json.loads(person_instance_json)
+
+    await PersonInstance.objects.create(name=person_instance_dict['name'],x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
+    return person_instance_dict
 
 @app.on_event("startup")
 async def startup():
@@ -98,7 +103,7 @@ async def shutdown():
 
 async def camerareader():
 
-    f = open("cameras.txt", "r")
+    f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
     f.close()
     await Cameras.objects.delete(each=True)
@@ -114,7 +119,7 @@ async def camerareader():
 
 async def zonereader():
 
-    f = open("zones.txt", "r")
+    f = open("/config/zones.txt", "r")
     zone_list = f.readlines()
     f.close()
     print("Zone CSV Length: {}",str(len(zone_list)))

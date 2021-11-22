@@ -1,0 +1,22 @@
+# Dockerfile.monoloco
+
+FROM python:3.8.12
+
+WORKDIR /lauretta
+
+
+# install dependencies
+COPY requirements-monoloco.txt ./
+
+RUN pip3.8 install -r requirements-monoloco.txt
+
+# Copy files after installation to prevent reinstalling dependencies during docker build
+COPY monoloco ./monoloco
+
+# update working directory after installations
+WORKDIR /lauretta/monoloco
+
+RUN python3 setup.py bdist_wheel
+RUN pip3 install -e .
+
+ENV PYTHONPATH "${PYTHONPATH}:monoloco"
