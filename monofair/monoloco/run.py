@@ -93,7 +93,6 @@ def cli():
 
 def main():
     args = cli()
-    print(args)
     from .visuals.webcam import webcam
     webcam(args)
 

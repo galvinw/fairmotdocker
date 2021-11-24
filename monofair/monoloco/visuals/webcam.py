@@ -96,14 +96,14 @@ def save_to_video(buffer):
 
 
 def webcam(args):
-    print(args)
+    # print(args)
     property_id = 1
 
     logging_interval = 0
     csv_counter = 0
     norm_counter = 0
 
-    tracker = JDETracker("Muna", frame_rate=15)
+    tracker = JDETracker("lauretta", frame_rate=15)
 
     camera_ip_address = []
     camera_desp = []
@@ -138,24 +138,24 @@ def webcam(args):
     INCIDENT_ENDPOINT = 'http://localhost:7000/api/incidents'
     INCIDENT_PERSON_INSTANCE_ENDPOINT = 'http://localhost:7000/api/incidents/person-instance'
 
-    try:
-        PARAMS = {'password': int(1234), 'email': 'admin@lauretta.io'}
-        r = requests.post(url = LOGIN_API, json = PARAMS, headers=HEADER)
-        print(r)
+    # try:
+    #     PARAMS = {'password': int(1234), 'email': 'admin@lauretta.io'}
+    #     r = requests.post(url = LOGIN_API, json = PARAMS, headers=HEADER)
+    #     print(r)
 
-    except Exception as e:
-        print(e)
-        text = 'Camera API Exception, Cant read Camera API'
+    # except Exception as e:
+    #     print(e)
+    #     text = 'Camera API Exception, Cant read Camera API'
 
-        print('Logged: {}'.format(text))
+    #     print('Logged: {}'.format(text))
 
-    startup_var = 0
+    # startup_var = 0
     counter = 0
-    min_box_area = 100
+    # min_box_area = 100
 
     args.device = torch.device('cpu')
-    if torch.cuda.is_available():
-        args.device = torch.device('cuda')
+    # if torch.cuda.is_available():
+    #     args.device = torch.device('cuda')
 
     trans = transforms.Compose([
     transforms.ToPILImage(),
@@ -170,12 +170,10 @@ def webcam(args):
     pifpaf = PifPaf(args)
     monoloco = MonoLoco(model=args.model, device=args.device)
 
-
-
     #cv2.namedWindow('Remote', cv2.WINDOW_AUTOSIZE)
     camera_ip_address = ["1.mp4"]
     camera_ids = [0]
-    camera_desp = ["BabyChick"]
+    camera_desp = ["Lauretta"]
     for camera_addr in itertools.cycle(camera_ip_address):
         index = camera_ip_address.index(camera_addr)
         try:
@@ -196,8 +194,10 @@ def webcam(args):
                     img0 = frame.copy()
                 except Exception:
                     continue
-                cv2.imshow('Remote', frame)
-                cv2.waitKey(1)
+
+                # Docker may not have GPU
+                # cv2.imshow('Remote', frame)
+                # cv2.waitKey(1)
                 image = frame.copy()
                 imagex = frame.copy()
 
@@ -232,7 +232,10 @@ def webcam(args):
                 img = img[:, :, ::-1].transpose(2, 0, 1)
                 img = np.ascontiguousarray(img, dtype=np.float32)
                 img /= 255.0
-                blob = torch.from_numpy(img).cuda().unsqueeze(0)
+
+                # blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                blob = torch.from_numpy(img).unsqueeze(0)
+                
                 online_targets = tracker.update(blob, img0)
 
                 online_tlbr = []
@@ -257,8 +260,11 @@ def webcam(args):
                     dic_out = monoloco.forward(keypoints, kk)
                     dic_out = monoloco.post_process(dic_out, boxes, keypoints, kk, dict_gt, reorder=False)
                     #show_social(args, image, str(counter), pifpaf_out, dic_out)
-                    violations, non_violations = record_social(args, image, str(counter), pifpaf_out, dic_out, camera_desp[index], camera_ids[index], INCIDENT_LOG_ENDPOINT, PERSON_INSTANCE_ENDPOINT, "BabyChick", trans)
+                    violations, non_violations = record_social(args, image, str(counter), pifpaf_out, dic_out, camera_desp[index], camera_ids[index], INCIDENT_LOG_ENDPOINT, PERSON_INSTANCE_ENDPOINT, "Lauretta", trans)
                     max_incidents.append(len(violations))
+                    print(f"\n\ndic_out value is {dic_out}\n")
+                    print(f"\n\nviolations value is {violations}\n")
+                    print(f"\n\non_violations value is {non_violations}\n")
 
                     for ilv in range(0, len(non_violations)):
                         max_iou = 0
@@ -584,7 +590,7 @@ def webcam(args):
                                     continue
                 counter += 1
 
-                
+            
             else:
                 break
         cam.release()

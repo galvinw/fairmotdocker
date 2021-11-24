@@ -192,8 +192,8 @@ class JDETracker(object):
         self.reg_offset=True
         self.ltrb = True
 
-        self.device = torch.device('cuda')
-        # self.device = torch.device('cpu')
+        # self.device = torch.device('cuda')
+        self.device = torch.device('cpu')
         print('Creating model...')
         self.model = create_model(self.arch, self.heads, self.head_conv)
         self.model = load_model(self.model, self.load_model)
