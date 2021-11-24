@@ -34,32 +34,47 @@ services:
       - "traefik.enable=false"
       - "traefik.http.routers.fastapi.rule=Host(`fastapi.localhost`)"
       
-  fair:
-    build:
-      context: ./FairMOT
-      # dockerfile: Dockerfile.fair
-    command: bash -c 'python3 src/track.py mot'
-    volumes:
-      - ./FairMOT:/lauretta
-      - ./config:/config
-      - ./videos:/videos
-    ports:
-      - "100:100"
-    depends_on:
-      - web
-      - db
+  # fair:
+  #   build:
+  #     context: ./FairMOT
+  #     # dockerfile: Dockerfile.fair
+  #   command: bash -c 'python3 src/track.py mot'
+  #   volumes:
+  #     - ./FairMOT:/lauretta
+  #     - ./config:/config
+  #     - ./videos:/videos
+  #   ports:
+  #     - "100:100"
+  #   depends_on:
+  #     - web
+  #     - db
 
-  monoloco:
+  # monoloco:
+  #   build:
+  #     context: ./monoloco
+  #     # dockerfile: Dockerfile.monoloco
+  #   command: bash -c 'python3 -m monoloco.run predict --webcam /videos/fastapidemoclip.mp4 --activities social_distance --output_types multi'
+  #   volumes:
+  #     - ./monoloco:/lauretta
+  #     - ./config:/config
+  #     - ./videos:/videos
+  #   ports:
+  #     - "200:200"
+  #   depends_on:
+  #     - web
+  #     - db
+
+  monofair:
     build:
-      context: ./monoloco
+      context: ./monofair
       # dockerfile: Dockerfile.monoloco
-    command: bash -c 'python3 -m monoloco.run predict --webcam /videos/fastapidemoclip.mp4 --activities social_distance --output_types multi'
+    command: bash -c 'python3 -m monoloco.run predict --model monoloco/data/monoloco-191018-1459.pkl'
     volumes:
-      - ./monoloco:/lauretta
+      - ./monofair:/lauretta
       - ./config:/config
       - ./videos:/videos
     ports:
-      - "200:200"
+      - "300:300"
     depends_on:
       - web
       - db

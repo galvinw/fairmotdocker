@@ -61,7 +61,7 @@ async def add_person(person: Person):
     person_json = person.json()
     person_dict = json.loads(person_json)
 
-    await Person.objects.get_or_create(name=person['name'])
+    await Person.objects.get_or_create(name=person_dict['name'])
     return person_dict
 
 @app.post("/add_person_instance/")
