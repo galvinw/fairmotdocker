@@ -12,12 +12,12 @@ import time
 import itertools 
 import csv
 import datetime
+import math
 
 import torchvision
 from torchvision import transforms
 
 from contextlib import contextmanager
-import math
 from ..visuals import Printer
 from ..visuals.pifpaf_show import KeypointPainter, image_canvas
 from ..network import PifPaf, MonoLoco
@@ -97,6 +97,19 @@ def save_to_video(buffer):
 
 def webcam(args):
     # print(args)
+
+    f = open("/config/cameras.txt", "r")
+    camera_list = f.readlines()
+    f.close()
+
+    element = camera_list[0].split(",")
+    cameraName = element[0]
+    cameraIP = element[1]
+    threshold = element[2]
+    lat = element[3]
+    longi = element[4]
+    camera_shift_time = int(element[6])
+
     property_id = 1
 
     logging_interval = 0
@@ -171,9 +184,13 @@ def webcam(args):
     monoloco = MonoLoco(model=args.model, device=args.device)
 
     #cv2.namedWindow('Remote', cv2.WINDOW_AUTOSIZE)
-    camera_ip_address = ["1.mp4"]
+
+
+    
+    camera_ip_address = [cameraIP]
     camera_ids = [0]
     camera_desp = ["Lauretta"]
+
     for camera_addr in itertools.cycle(camera_ip_address):
         index = camera_ip_address.index(camera_addr)
         try:
@@ -223,7 +240,6 @@ def webcam(args):
                 intrinsic_size = [xx * 1.3 for xx in pil_image.size]
                 kk, dict_gt = factory_for_gt(intrinsic_size)  # better intrinsics for mac camera
                 
-
                 
                 
                 ##################RE-ID###############################################
@@ -233,9 +249,11 @@ def webcam(args):
                 img = np.ascontiguousarray(img, dtype=np.float32)
                 img /= 255.0
 
+                # Docker container may not have cuda
                 # blob = torch.from_numpy(img).cuda().unsqueeze(0)
                 blob = torch.from_numpy(img).unsqueeze(0)
                 
+                # Run FairMOT and also print Activated, Refind, Lost and Removed
                 online_targets = tracker.update(blob, img0)
 
                 online_tlbr = []
@@ -262,9 +280,23 @@ def webcam(args):
                     #show_social(args, image, str(counter), pifpaf_out, dic_out)
                     violations, non_violations = record_social(args, image, str(counter), pifpaf_out, dic_out, camera_desp[index], camera_ids[index], INCIDENT_LOG_ENDPOINT, PERSON_INSTANCE_ENDPOINT, "Lauretta", trans)
                     max_incidents.append(len(violations))
-                    print(f"\n\ndic_out value is {dic_out}\n")
-                    print(f"\n\nviolations value is {violations}\n")
-                    print(f"\n\non_violations value is {non_violations}\n")
+
+                    url = 'http://web:8000/add_person_instance/'
+                    camera_to_person_xyz = dic_out['xyz_real']
+
+                    for xyz in camera_to_person_xyz:
+                        x = xyz[0]
+                        # y = xyz[1]
+                        z = xyz[2]
+
+                        person_instance_obj = {
+                            "id": 0,
+                            "name": f"Person {camera_to_person_xyz.index(xyz)}",
+                            "x": x,
+                            "z": z
+                        }
+
+                        x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
 
                     for ilv in range(0, len(non_violations)):
                         max_iou = 0
@@ -273,11 +305,12 @@ def webcam(args):
                         race_temp = None
                         gender_temp = None
                         monoloco_idx, camera_id,floor_id,incident_type_id,box_x1, box_y1, box_x2, box_y2, floor_x1, floor_y1, floor_x2, floor_y2, status_id, direction_degrees = non_violations[ilv]
+
                         
                         try:
                             PARAMS = {'property_id':int(property_id),'cam_id': int(camera_id), 'floor_id': int(floor_id), 'person_instance_x1': box_x1, 'person_instance_y1': box_y1, 'person_instance_x2': box_x2, 'person_instance_y2': box_y2, 'floorplan_x1': floor_x1, 'floorplan_y1': floor_y1, 'floorplan_x2': floor_x2, 'floorplan_y2' : floor_y2}
-                            print(PARAMS)
-                            print(HEADER)
+                            # print(PARAMS)
+                            # print(HEADER)
                             q = requests.post(url = PERSON_INSTANCE_ENDPOINT, json = PARAMS, headers=HEADER)
                             person_instance_id = q.json()['data']['id']
 
@@ -313,6 +346,7 @@ def webcam(args):
                                     if temp:
                                         groups[online_ids[idx_val]] = online_ids
                             unique_id = online_ids[max_iou_index]
+                            print(f"\n\n\nunique_id : {unique_id}\n\n\n")
                             if unique_id not in unique_reid:
                                 unique_reid.append(unique_id)
                                 try:
@@ -631,7 +665,6 @@ def webcam(args):
 
             except:
                 continue
-
 
         print(group_count)
 

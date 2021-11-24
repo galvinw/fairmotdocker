@@ -21,6 +21,7 @@ from ..utils.post_process import ctdet_post_process
 from ..utils.image import get_affine_transform
 from ..models.utils import _tranpose_and_gather_feat
 
+import requests
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
@@ -393,6 +394,19 @@ class JDETracker(object):
         logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
         logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
 
+        ####### Posting Person ID to db #######
+        person_id = [track.track_id for track in activated_starcks]
+
+        url = 'http://web:8000/add_person/'
+
+        if len(person_id) > 0:
+            for id in person_id:
+                person_id_obj = {
+                    "id": id,
+                    "name": f"Person {id}"
+                }
+
+                x = requests.post(url,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
         return output_stracks
 
 
