@@ -79,21 +79,6 @@ services:
       - web
       - db
 
-  monofair:
-    build:
-      context: ./monofair
-      # dockerfile: Dockerfile.monoloco
-    command: bash -c 'python3 -m monoloco.run predict --model monoloco/data/monoloco-191018-1459.pkl'
-    volumes:
-      - ./monofair:/lauretta
-      # - ./config:/config
-      # - ./videos:/videos
-    ports:
-      - "300:300"
-    # depends_on:
-      # - web
-      # - db
-
   traefik:
     image: traefik:v2.2
     ports:
