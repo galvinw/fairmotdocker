@@ -18,4 +18,6 @@ RUN pip3.8 install cython_bbox
 
 COPY . .
 RUN python3 setup.py sdist bdist_wheel
-RUN (cd monoloco/visuals/FairMOT/DCNv2-pytorch_1.6/ ; chmod +x make.sh ; ./make.sh)
+RUN (cd monoloco/visuals/FairMOT/DCNv2-pytorch_1.6/ ; python3.8 setup.py install develop)
+
+ENV PYTHONPATH "${PYTHONPATH}:monoloco/visuals/FairMOT/:monoloco/visuals/FairMOT/DCNv2-pytorch_1.6:monoloco/visuals/FairMOT/DCNv2-pytorch_1.6/src"
