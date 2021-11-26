@@ -12,15 +12,8 @@ Icon?
 *.o
 *pyc
 
-# FairMOT
-FairMOT/DCNv2/_ext
-FairMOT/DCNv2/build
-FairMOT/models/*.pth
-FairMOT/DCNv2/DCNv2.egg-info
-FairMOT/DCNv2/dist
-
 # Environments
-.env
+# .env
 .venv
 env/
 venv/
@@ -28,4 +21,15 @@ ENV/
 env.bak/
 venv.bak/
 
+# FairMOT
+FairMOT/DCNv2/_ext
+FairMOT/DCNv2/build
+FairMOT/models/*.pth
+FairMOT/DCNv2/DCNv2.egg-info
+FairMOT/DCNv2/dist
+
+# Videos
 videos/*.mp4
+
+# Monofair
+monofair/modelsx/fairmot_dla34.pth
