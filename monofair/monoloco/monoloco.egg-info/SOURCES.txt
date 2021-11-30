@@ -1,0 +1,395 @@
+.gitattributes
+.gitignore
+Dockerfile
+README.md
+__init__.py
+requirements.txt
+run.py
+setup.py
+data/monoloco-191018-1459.pkl
+eval/__init__.py
+eval/eval_kitti.py
+eval/generate_kitti.py
+eval/geom_baseline.py
+eval/reid_baseline.py
+eval/stereo_baselines.py
+gfd/__init__.py
+gfd/py/__init__.py
+gfd/py/video/__init__.py
+gfd/py/video/capture.py
+lib/basetrack.py
+lib/matching.py
+lib/multitracker.py
+models/data_parallel.py
+models/decode.py
+models/losses.py
+models/model.py
+models/scatter_gather.py
+models/utils.py
+models/networks/dlav0.py
+models/networks/pose_dla_conv.py
+models/networks/pose_dla_dcn.py
+models/networks/pose_hrnet.py
+models/networks/resnet_dcn.py
+models/networks/resnet_fpn_dcn.py
+models/networks/config/__init__.py
+models/networks/config/default.py
+models/networks/config/hrnet_w18.yaml
+models/networks/config/hrnet_w32.yaml
+monoloco/__init__.py
+monoloco/predict.py
+monoloco/predict_social.py
+monoloco/run.py
+monoloco.egg-info/PKG-INFO
+monoloco.egg-info/SOURCES.txt
+monoloco.egg-info/dependency_links.txt
+monoloco.egg-info/not-zip-safe
+monoloco.egg-info/requires.txt
+monoloco.egg-info/top_level.txt
+monoloco/eval/__init__.py
+monoloco/eval/eval_kitti.py
+monoloco/eval/generate_kitti.py
+monoloco/eval/geom_baseline.py
+monoloco/eval/reid_baseline.py
+monoloco/eval/stereo_baselines.py
+monoloco/network/__init__.py
+monoloco/network/architectures.py
+monoloco/network/net.py
+monoloco/network/pifpaf.py
+monoloco/network/process.py
+monoloco/prep/__init__.py
+monoloco/prep/preprocess_ki.py
+monoloco/prep/preprocess_nu.py
+monoloco/prep/transforms.py
+monoloco/train/__init__.py
+monoloco/train/datasets.py
+monoloco/train/hyp_tuning.py
+monoloco/train/losses.py
+monoloco/train/trainer.py
+monoloco/utils/__init__.py
+monoloco/utils/camera.py
+monoloco/utils/iou.py
+monoloco/utils/kitti.py
+monoloco/utils/logs.py
+monoloco/utils/misc.py
+monoloco/utils/nuscenes.py
+monoloco/visuals/__init__.py
+monoloco/visuals/figures.py
+monoloco/visuals/pifpaf_show.py
+monoloco/visuals/printer.py
+monoloco/visuals/webcam.py
+network/__init__.py
+network/architectures.py
+network/net.py
+network/pifpaf.py
+network/process.py
+prep/__init__.py
+prep/get_orientations.ipynb
+prep/preprocess_ki.py
+prep/preprocess_nu.py
+prep/transforms.py
+tracker/basetrack.py
+tracker/matching.py
+tracker/multitracker.py
+tracker/models/data_parallel.py
+tracker/models/decode.py
+tracker/models/losses.py
+tracker/models/model.py
+tracker/models/scatter_gather.py
+tracker/models/utils.py
+tracker/models/networks/dlav0.py
+tracker/models/networks/pose_dla_conv.py
+tracker/models/networks/pose_dla_dcn.py
+tracker/models/networks/pose_hrnet.py
+tracker/models/networks/resnet_dcn.py
+tracker/models/networks/resnet_fpn_dcn.py
+tracker/models/networks/config/__init__.py
+tracker/models/networks/config/default.py
+tracker/models/networks/config/hrnet_w18.yaml
+tracker/models/networks/config/hrnet_w32.yaml
+tracking_utils/evaluation.py
+tracking_utils/io.py
+tracking_utils/kalman_filter.py
+tracking_utils/log.py
+tracking_utils/nms.py
+tracking_utils/parse_config.py
+tracking_utils/timer.py
+tracking_utils/utils.py
+tracking_utils/visualization.py
+train/__init__.py
+train/datasets.py
+train/hyp_tuning.py
+train/losses.py
+train/trainer.py
+utils/__init__.py
+utils/camera.py
+utils/image.py
+utils/iou.py
+utils/kitti.py
+utils/logs.py
+utils/misc.py
+utils/nuscenes.py
+utils/post_process.py
+utils/utils.py
+videos/.gitkeep
+visuals/__init__.py
+visuals/figures.py
+visuals/pifpaf_show.py
+visuals/printer.py
+visuals/webcam.py
+visuals/FairMOT/.gitignore
+visuals/FairMOT/1/_init_paths.py
+visuals/FairMOT/1/demo.py
+visuals/FairMOT/1/gen_data_path.py
+visuals/FairMOT/1/gen_labels_15.py
+visuals/FairMOT/1/gen_labels_16.py
+visuals/FairMOT/1/gen_labels_20.py
+visuals/FairMOT/1/gen_labels_crowd.py
+visuals/FairMOT/1/test_det.py
+visuals/FairMOT/1/test_emb.py
+visuals/FairMOT/1/track.py
+visuals/FairMOT/1/track_half.py
+visuals/FairMOT/1/train.py
+visuals/FairMOT/1/data/caltech.10k.val
+visuals/FairMOT/1/data/caltech.all
+visuals/FairMOT/1/data/caltech.train
+visuals/FairMOT/1/data/caltech.val
+visuals/FairMOT/1/data/citypersons.train
+visuals/FairMOT/1/data/citypersons.val
+visuals/FairMOT/1/data/crowdhuman.train
+visuals/FairMOT/1/data/crowdhuman.val
+visuals/FairMOT/1/data/cuhksysu.train
+visuals/FairMOT/1/data/cuhksysu.val
+visuals/FairMOT/1/data/eth.train
+visuals/FairMOT/1/data/mot15.train
+visuals/FairMOT/1/data/mot16.train
+visuals/FairMOT/1/data/mot17.emb
+visuals/FairMOT/1/data/mot17.half
+visuals/FairMOT/1/data/mot17.train
+visuals/FairMOT/1/data/mot17.val
+visuals/FairMOT/1/data/mot20.train
+visuals/FairMOT/1/data/prw.train
+visuals/FairMOT/1/data/prw.val
+visuals/FairMOT/1/lib/logger.py
+visuals/FairMOT/1/lib/opts.py
+visuals/FairMOT/1/lib/cfg/crowdhuman.json
+visuals/FairMOT/1/lib/cfg/data.json
+visuals/FairMOT/1/lib/cfg/data_half.json
+visuals/FairMOT/1/lib/cfg/mot15.json
+visuals/FairMOT/1/lib/cfg/mot16.json
+visuals/FairMOT/1/lib/cfg/mot17.json
+visuals/FairMOT/1/lib/cfg/mot17_half.json
+visuals/FairMOT/1/lib/cfg/mot20.json
+visuals/FairMOT/1/lib/datasets/dataset_factory.py
+visuals/FairMOT/1/lib/datasets/dataset/jde.py
+visuals/FairMOT/1/lib/models/data_parallel.py
+visuals/FairMOT/1/lib/models/decode.py
+visuals/FairMOT/1/lib/models/losses.py
+visuals/FairMOT/1/lib/models/model.py
+visuals/FairMOT/1/lib/models/scatter_gather.py
+visuals/FairMOT/1/lib/models/utils.py
+visuals/FairMOT/1/lib/models/networks/dlav0.py
+visuals/FairMOT/1/lib/models/networks/pose_dla_conv.py
+visuals/FairMOT/1/lib/models/networks/pose_dla_dcn.py
+visuals/FairMOT/1/lib/models/networks/pose_hrnet.py
+visuals/FairMOT/1/lib/models/networks/resnet_dcn.py
+visuals/FairMOT/1/lib/models/networks/resnet_fpn_dcn.py
+visuals/FairMOT/1/lib/models/networks/config/__init__.py
+visuals/FairMOT/1/lib/models/networks/config/default.py
+visuals/FairMOT/1/lib/models/networks/config/hrnet_w18.yaml
+visuals/FairMOT/1/lib/models/networks/config/hrnet_w32.yaml
+visuals/FairMOT/1/lib/tracker/basetrack.py
+visuals/FairMOT/1/lib/tracker/matching.py
+visuals/FairMOT/1/lib/tracker/multitracker.py
+visuals/FairMOT/1/lib/tracking_utils/evaluation.py
+visuals/FairMOT/1/lib/tracking_utils/io.py
+visuals/FairMOT/1/lib/tracking_utils/kalman_filter.py
+visuals/FairMOT/1/lib/tracking_utils/log.py
+visuals/FairMOT/1/lib/tracking_utils/nms.py
+visuals/FairMOT/1/lib/tracking_utils/parse_config.py
+visuals/FairMOT/1/lib/tracking_utils/timer.py
+visuals/FairMOT/1/lib/tracking_utils/utils.py
+visuals/FairMOT/1/lib/tracking_utils/visualization.py
+visuals/FairMOT/1/lib/trains/base_trainer.py
+visuals/FairMOT/1/lib/trains/mot.py
+visuals/FairMOT/1/lib/trains/train_factory.py
+visuals/FairMOT/1/lib/utils/image.py
+visuals/FairMOT/1/lib/utils/post_process.py
+visuals/FairMOT/1/lib/utils/utils.py
+visuals/FairMOT/DCNv2/.gitignore
+visuals/FairMOT/DCNv2/LICENSE
+visuals/FairMOT/DCNv2/README.md
+visuals/FairMOT/DCNv2/__init__.py
+visuals/FairMOT/DCNv2/dcn_v2.py
+visuals/FairMOT/DCNv2/make.sh
+visuals/FairMOT/DCNv2/setup.py
+visuals/FairMOT/DCNv2/testcpu.py
+visuals/FairMOT/DCNv2/testcuda.py
+visuals/FairMOT/DCNv2/src/dcn_v2.h
+visuals/FairMOT/DCNv2/src/vision.cpp
+visuals/FairMOT/DCNv2/src/cpu/dcn_v2_cpu.cpp
+visuals/FairMOT/DCNv2/src/cpu/dcn_v2_im2col_cpu.cpp
+visuals/FairMOT/DCNv2/src/cpu/dcn_v2_im2col_cpu.h
+visuals/FairMOT/DCNv2/src/cpu/dcn_v2_psroi_pooling_cpu.cpp
+visuals/FairMOT/DCNv2/src/cpu/vision.h
+visuals/FairMOT/DCNv2/src/cuda/dcn_v2_cuda.cu
+visuals/FairMOT/DCNv2/src/cuda/dcn_v2_im2col_cuda.cu
+visuals/FairMOT/DCNv2/src/cuda/dcn_v2_im2col_cuda.h
+visuals/FairMOT/DCNv2/src/cuda/dcn_v2_psroi_pooling_cuda.cu
+visuals/FairMOT/DCNv2/src/cuda/vision.h
+visuals/FairMOT/src/muna.py
+visuals/FairMOT/src (3)/src/muna.py
+visuals/FairMOT/src (3)/src/lib/basetrack.py
+visuals/FairMOT/src (3)/src/lib/matching.py
+visuals/FairMOT/src (3)/src/lib/multitracker.py
+visuals/FairMOT/src (3)/src/models/data_parallel.py
+visuals/FairMOT/src (3)/src/models/decode.py
+visuals/FairMOT/src (3)/src/models/losses.py
+visuals/FairMOT/src (3)/src/models/model.py
+visuals/FairMOT/src (3)/src/models/scatter_gather.py
+visuals/FairMOT/src (3)/src/models/utils.py
+visuals/FairMOT/src (3)/src/models/networks/dlav0.py
+visuals/FairMOT/src (3)/src/models/networks/pose_dla_conv.py
+visuals/FairMOT/src (3)/src/models/networks/pose_dla_dcn.py
+visuals/FairMOT/src (3)/src/models/networks/pose_hrnet.py
+visuals/FairMOT/src (3)/src/models/networks/resnet_dcn.py
+visuals/FairMOT/src (3)/src/models/networks/resnet_fpn_dcn.py
+visuals/FairMOT/src (3)/src/models/networks/config/__init__.py
+visuals/FairMOT/src (3)/src/models/networks/config/default.py
+visuals/FairMOT/src (3)/src/models/networks/config/hrnet_w18.yaml
+visuals/FairMOT/src (3)/src/models/networks/config/hrnet_w32.yaml
+visuals/FairMOT/src (3)/src/tracker/basetrack.py
+visuals/FairMOT/src (3)/src/tracker/matching.py
+visuals/FairMOT/src (3)/src/tracker/multitracker.py
+visuals/FairMOT/src (3)/src/tracker/models/data_parallel.py
+visuals/FairMOT/src (3)/src/tracker/models/decode.py
+visuals/FairMOT/src (3)/src/tracker/models/losses.py
+visuals/FairMOT/src (3)/src/tracker/models/model.py
+visuals/FairMOT/src (3)/src/tracker/models/scatter_gather.py
+visuals/FairMOT/src (3)/src/tracker/models/utils.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/dlav0.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/pose_dla_conv.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/pose_dla_dcn.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/pose_hrnet.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/resnet_dcn.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/resnet_fpn_dcn.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/config/__init__.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/config/default.py
+visuals/FairMOT/src (3)/src/tracker/models/networks/config/hrnet_w18.yaml
+visuals/FairMOT/src (3)/src/tracker/models/networks/config/hrnet_w32.yaml
+visuals/FairMOT/src (3)/src/tracking_utils/evaluation.py
+visuals/FairMOT/src (3)/src/tracking_utils/io.py
+visuals/FairMOT/src (3)/src/tracking_utils/kalman_filter.py
+visuals/FairMOT/src (3)/src/tracking_utils/log.py
+visuals/FairMOT/src (3)/src/tracking_utils/nms.py
+visuals/FairMOT/src (3)/src/tracking_utils/parse_config.py
+visuals/FairMOT/src (3)/src/tracking_utils/timer.py
+visuals/FairMOT/src (3)/src/tracking_utils/utils.py
+visuals/FairMOT/src (3)/src/tracking_utils/visualization.py
+visuals/FairMOT/src (3)/src/utils/image.py
+visuals/FairMOT/src (3)/src/utils/post_process.py
+visuals/FairMOT/src (3)/src/utils/utils.py
+visuals/FairMOT/src/lib/basetrack.py
+visuals/FairMOT/src/lib/matching.py
+visuals/FairMOT/src/lib/multitracker.py
+visuals/FairMOT/src/models/data_parallel.py
+visuals/FairMOT/src/models/decode.py
+visuals/FairMOT/src/models/losses.py
+visuals/FairMOT/src/models/model.py
+visuals/FairMOT/src/models/scatter_gather.py
+visuals/FairMOT/src/models/utils.py
+visuals/FairMOT/src/models/networks/dlav0.py
+visuals/FairMOT/src/models/networks/pose_dla_conv.py
+visuals/FairMOT/src/models/networks/pose_dla_dcn.py
+visuals/FairMOT/src/models/networks/pose_hrnet.py
+visuals/FairMOT/src/models/networks/resnet_dcn.py
+visuals/FairMOT/src/models/networks/resnet_fpn_dcn.py
+visuals/FairMOT/src/models/networks/config/__init__.py
+visuals/FairMOT/src/models/networks/config/default.py
+visuals/FairMOT/src/models/networks/config/hrnet_w18.yaml
+visuals/FairMOT/src/models/networks/config/hrnet_w32.yaml
+visuals/FairMOT/src/tracker/basetrack.py
+visuals/FairMOT/src/tracker/matching.py
+visuals/FairMOT/src/tracker/multitracker.py
+visuals/FairMOT/src/tracker/models/data_parallel.py
+visuals/FairMOT/src/tracker/models/decode.py
+visuals/FairMOT/src/tracker/models/losses.py
+visuals/FairMOT/src/tracker/models/model.py
+visuals/FairMOT/src/tracker/models/scatter_gather.py
+visuals/FairMOT/src/tracker/models/utils.py
+visuals/FairMOT/src/tracker/models/networks/dlav0.py
+visuals/FairMOT/src/tracker/models/networks/pose_dla_conv.py
+visuals/FairMOT/src/tracker/models/networks/pose_dla_dcn.py
+visuals/FairMOT/src/tracker/models/networks/pose_hrnet.py
+visuals/FairMOT/src/tracker/models/networks/resnet_dcn.py
+visuals/FairMOT/src/tracker/models/networks/resnet_fpn_dcn.py
+visuals/FairMOT/src/tracker/models/networks/config/__init__.py
+visuals/FairMOT/src/tracker/models/networks/config/default.py
+visuals/FairMOT/src/tracker/models/networks/config/hrnet_w18.yaml
+visuals/FairMOT/src/tracker/models/networks/config/hrnet_w32.yaml
+visuals/FairMOT/src/tracking_utils/evaluation.py
+visuals/FairMOT/src/tracking_utils/io.py
+visuals/FairMOT/src/tracking_utils/kalman_filter.py
+visuals/FairMOT/src/tracking_utils/log.py
+visuals/FairMOT/src/tracking_utils/nms.py
+visuals/FairMOT/src/tracking_utils/parse_config.py
+visuals/FairMOT/src/tracking_utils/timer.py
+visuals/FairMOT/src/tracking_utils/utils.py
+visuals/FairMOT/src/tracking_utils/visualization.py
+visuals/FairMOT/src/utils/image.py
+visuals/FairMOT/src/utils/post_process.py
+visuals/FairMOT/src/utils/utils.py
+visuals/FairMOT/src1/_init_paths.py
+visuals/FairMOT/src1/demo.py
+visuals/FairMOT/src1/muna.py
+visuals/FairMOT/src1/test_emb.py
+visuals/FairMOT/src1/track_half.py
+visuals/FairMOT/src1/trackx.py
+visuals/FairMOT/src1/train.py
+visuals/FairMOT/src1/lib/logger.py
+visuals/FairMOT/src1/lib/opts.py
+visuals/FairMOT/src1/lib/trackx.py
+visuals/FairMOT/src1/lib/cfg/crowdhuman.json
+visuals/FairMOT/src1/lib/cfg/data.json
+visuals/FairMOT/src1/lib/cfg/data_half.json
+visuals/FairMOT/src1/lib/cfg/mot15.json
+visuals/FairMOT/src1/lib/cfg/mot16.json
+visuals/FairMOT/src1/lib/cfg/mot17.json
+visuals/FairMOT/src1/lib/cfg/mot17_half.json
+visuals/FairMOT/src1/lib/cfg/mot20.json
+visuals/FairMOT/src1/lib/datasets/dataset_factory.py
+visuals/FairMOT/src1/lib/datasets/dataset/jde.py
+visuals/FairMOT/src1/lib/models/data_parallel.py
+visuals/FairMOT/src1/lib/models/decode.py
+visuals/FairMOT/src1/lib/models/losses.py
+visuals/FairMOT/src1/lib/models/model.py
+visuals/FairMOT/src1/lib/models/scatter_gather.py
+visuals/FairMOT/src1/lib/models/utils.py
+visuals/FairMOT/src1/lib/models/networks/dlav0.py
+visuals/FairMOT/src1/lib/models/networks/pose_dla_conv.py
+visuals/FairMOT/src1/lib/models/networks/pose_dla_dcn.py
+visuals/FairMOT/src1/lib/models/networks/pose_hrnet.py
+visuals/FairMOT/src1/lib/models/networks/resnet_dcn.py
+visuals/FairMOT/src1/lib/models/networks/resnet_fpn_dcn.py
+visuals/FairMOT/src1/lib/models/networks/config/__init__.py
+visuals/FairMOT/src1/lib/models/networks/config/default.py
+visuals/FairMOT/src1/lib/models/networks/config/hrnet_w18.yaml
+visuals/FairMOT/src1/lib/models/networks/config/hrnet_w32.yaml
+visuals/FairMOT/src1/lib/tracker/basetrack.py
+visuals/FairMOT/src1/lib/tracker/matching.py
+visuals/FairMOT/src1/lib/tracker/multitracker.py
+visuals/FairMOT/src1/lib/tracking_utils/evaluation.py
+visuals/FairMOT/src1/lib/tracking_utils/io.py
+visuals/FairMOT/src1/lib/tracking_utils/kalman_filter.py
+visuals/FairMOT/src1/lib/tracking_utils/log.py
+visuals/FairMOT/src1/lib/tracking_utils/nms.py
+visuals/FairMOT/src1/lib/tracking_utils/parse_config.py
+visuals/FairMOT/src1/lib/tracking_utils/timer.py
+visuals/FairMOT/src1/lib/tracking_utils/utils.py
+visuals/FairMOT/src1/lib/tracking_utils/visualization.py
+visuals/FairMOT/src1/lib/trains/base_trainer.py
+visuals/FairMOT/src1/lib/trains/mot.py
+visuals/FairMOT/src1/lib/trains/train_factory.py
+visuals/FairMOT/src1/lib/utils/image.py
+visuals/FairMOT/src1/lib/utils/post_process.py
+visuals/FairMOT/src1/lib/utils/utils.py
