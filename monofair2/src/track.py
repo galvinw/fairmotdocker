@@ -117,9 +117,11 @@ def eval_prop():
             my_date = datetime.now()
 
             # print(len(predictions))
+
+            ################## POST DATA ################## 
+            BASE_URL = 'http://web:8000'
             
-            ################## POST ZONE STATUS ################## 
-            url = 'http://web:8000/add_zone_status/'
+            url = f"{BASE_URL}/add_zone_status/"
             zone_status_obj = {
                         "id": 0,
                         "create_at": "2021-11-02T16:08:46.505Z",
@@ -127,7 +129,17 @@ def eval_prop():
                         "number": len(predictions)
             }
             x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
-            ###################################################### 
+            
+            
+            url = f"{BASE_URL}/add_person/"
+            if len(online_ids) > 0:
+                for id in online_ids:
+                    person_id_obj = {
+                        "id": id,
+                        "name": f"Person {id}"
+                    }
+                    y = requests.post(url,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
+            ############################################### 
 
             # Zone_Status.objects.get_or_create(zone_id=1,number=int(len(predictions)))
             # if int(threshold) < len(predictions):
