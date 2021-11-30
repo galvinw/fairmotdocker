@@ -82,8 +82,8 @@ async def startup():
         await Cameras.objects.get_or_create(name="Camera 1",connectionstring='TestVideo17.mp4')
         await camerareader()
         await zonereader()
-        await PersonInstance.objects.get_or_create(name="PersonInstance1")
-        await Person.objects.get_or_create(name="Person 1")
+        await PersonInstance.objects.get_or_create(name="PersonInstance0")
+        await Person.objects.get_or_create(name="Person 0")
         
 
 
