@@ -106,8 +106,9 @@ def webcam(args):
     while True:
         start = time.time()
         ret, frame = cam.read()
-        scale = (args.long_edge)/frame.shape[0]
-        image = cv2.resize(frame, None, fx=scale, fy=scale)
+        # scale = (args.long_edge)/frame.shape[0]
+        # image = cv2.resize(frame, None, fx=scale, fy=scale)
+        image = cv2.resize(frame, (1920, 1080))
         height, width, _ = image.shape
         LOG.debug('resized image size: {}'.format(image.shape))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -142,6 +143,8 @@ def webcam(args):
         boxes, keypoints = preprocess_pifpaf(
             pifpaf_outs['left'], (width, height))
 
+        frame_id = 0
+
         dic_out = net.forward(keypoints, kk)
         dic_out = net.post_process(dic_out, boxes, keypoints, kk)
 
@@ -159,11 +162,11 @@ def webcam(args):
         print(f"Identified {len(dic_out['xyz_pred'])} people")
         print(f"xyz_pred: {dic_out['xyz_pred']}")
 
+        ################## POST DATA ################## 
+        # '''
         BASE_URL = 'http://web:8000'
-        url = f"{BASE_URL}/add_person_instance/"
 
         camera_to_person_xyz = dic_out['xyz_pred']
-
         for id, xyz in enumerate(camera_to_person_xyz):
             x = xyz[0]
             # y = xyz[1]
@@ -171,14 +174,18 @@ def webcam(args):
 
             person_instance_obj = {
                         "id": 0,
-                        "name": f"PersonInstance {id}",
+                        "name": f"Person {id}",
+                        "frame_id": frame_id,
                         "x": x,
                         "z": z
             }
-
-            x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-
+            url = f"{BASE_URL}/patch_person_instance/"
+            # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
+            x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+        # '''
+        ############################################### 
         LOG.debug(dic_out)
+        frame_id += 1
 
         # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
         # cv2.imshow("Input Video - for debug purpose", frame)

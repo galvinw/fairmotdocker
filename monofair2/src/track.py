@@ -115,10 +115,6 @@ def eval_prop():
 
 
 
-            frame_id += 1
-
-            my_date = datetime.now()
-
             # print(len(predictions))
 
             ################## POST DATA ################## 
@@ -131,19 +127,33 @@ def eval_prop():
                         "number": len(online_ids)
                     }
                         # "number": len(predictions)    # Using openpifpaf for number of people
+            # print(f"request.post zone_status")
             x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
             
             
             url = f"{BASE_URL}/add_person/"
+            url2 = f"{BASE_URL}/add_person_instance/"
             if len(online_ids) > 0:
                 for id in online_ids:
                     person_id_obj = {
                         "id": id,
                         "name": f"Person {id}"
                     }
+                    person_instance_obj = {
+                        "id": id,
+                        "name": f"Person {id}",
+                        "frame_id": frame_id
+                    }
+                    # print(f"request.post add_person")
                     y = requests.post(url,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
+                    # print(f"request.post add_person_instance")
+                    z = requests.post(url2,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
             # '''
             ############################################### 
+
+            frame_id += 1
+
+            my_date = datetime.now()
 
             # Zone_Status.objects.get_or_create(zone_id=1,number=int(len(predictions)))
             # if int(threshold) < len(predictions):
