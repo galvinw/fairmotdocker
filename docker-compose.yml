@@ -33,7 +33,38 @@ services:
     labels:
       - "traefik.enable=false"
       - "traefik.http.routers.fastapi.rule=Host(`fastapi.localhost`)"
-      
+
+  monofair:
+    build:
+      context: ./monofair2
+    command: bash -c 'python3.8 src/track.py predict'
+    # command: bash -c 'cd monoloco && python3.8 -m monoloco.run predict --webcam /videos/fastapidemoclip.mp4 --output_types multi'
+    volumes:
+      - ./monofair2:/lauretta
+      - ./config:/config
+      - ./videos:/videos
+    # ports:
+    #   - "100:100"
+    depends_on:
+      - web
+      - db
+
+  monofair2:
+    build:
+      context: ./monofair2
+    # command: bash -c 'python3.8 src/track.py predict'
+    command: bash -c 'cd monoloco && python3.8 -m monoloco.run predict --webcam --output_types multi'
+    volumes:
+      - ./monofair2:/lauretta
+      - ./config:/config
+      - ./videos:/videos
+    # ports:
+    #   - "100:100"
+
+    depends_on:
+      - web
+      - db
+
   # fair:
   #   build:
   #     context: ./FairMOT
@@ -63,21 +94,6 @@ services:
   #   depends_on:
   #     - web
   #     - db
-
-  monofair:
-    build:
-      context: ./monofair
-      # dockerfile: Dockerfile.monoloco
-    command: bash -c 'python3 -m monoloco.run predict --model monoloco/data/monoloco-191018-1459.pkl'
-    volumes:
-      - ./monofair:/lauretta
-      - ./config:/config
-      - ./videos:/videos
-    ports:
-      - "300:300"
-    depends_on:
-      - web
-      - db
 
   traefik:
     image: traefik:v2.2

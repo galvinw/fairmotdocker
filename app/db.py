@@ -61,6 +61,7 @@ class PersonInstance(ormar.Model):
         tablename = "person_instance"
     id: int = ormar.Integer(primary_key=True)
     name: str = ormar.String(max_length=128,nullable=False, default="PersonInstance")
+    frame_id: int = ormar.Integer(nullable=True)
     x:float = ormar.Float(nullable=True)
     z:float = ormar.Float(nullable=True)
     create_at: datetime = ormar.DateTime(default=datetime.now) 

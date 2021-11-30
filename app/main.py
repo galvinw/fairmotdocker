@@ -21,8 +21,6 @@ class ZoneStatusRequest(BaseModel):
     number: int
 
 
-
-
 @app.get("/")
 async def read_root():
     return await User.objects.all()
@@ -69,7 +67,17 @@ async def add_person_instance(person_instance: PersonInstance):
     person_instance_json = person_instance.json()
     person_instance_dict = json.loads(person_instance_json)
 
-    await PersonInstance.objects.create(name=person_instance_dict['name'],x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
+    # await PersonInstance.objects.create(name=person_instance_dict['name'],x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
+    await PersonInstance.objects.create(name=person_instance_dict['name'],frame_id=int(person_instance_dict['frame_id']))
+    return person_instance_dict
+
+# @app.patch("/patch_person_instance/{frame_id}/{name}")
+@app.patch("/patch_person_instance/")
+async def patch_person_instance(person_instance: PersonInstance):
+    person_instance_json = person_instance.json()
+    person_instance_dict = json.loads(person_instance_json)
+
+    await PersonInstance.objects.update(name=person_instance_dict['name'],frame_id=int(person_instance_dict['frame_id']),x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
     return person_instance_dict
 
 @app.on_event("startup")
@@ -82,8 +90,8 @@ async def startup():
         await Cameras.objects.get_or_create(name="Camera 1",connectionstring='TestVideo17.mp4')
         await camerareader()
         await zonereader()
-        await PersonInstance.objects.get_or_create(name="PersonInstance1")
-        await Person.objects.get_or_create(name="Person 1")
+        await PersonInstance.objects.get_or_create(name="PersonInstance0")
+        await Person.objects.get_or_create(name="Person 0")
         
 
 
