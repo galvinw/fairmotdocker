@@ -69,7 +69,8 @@ async def add_person_instance(person_instance: PersonInstance):
     person_instance_json = person_instance.json()
     person_instance_dict = json.loads(person_instance_json)
 
-    await PersonInstance.objects.create(name=person_instance_dict['name'],x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
+    # await PersonInstance.objects.create(name=person_instance_dict['name'],x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
+    await PersonInstance.objects.create(name=person_instance_dict['name'])
     return person_instance_dict
 
 @app.on_event("startup")

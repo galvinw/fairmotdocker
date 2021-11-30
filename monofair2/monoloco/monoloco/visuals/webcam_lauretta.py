@@ -106,8 +106,9 @@ def webcam(args):
     while True:
         start = time.time()
         ret, frame = cam.read()
-        scale = (args.long_edge)/frame.shape[0]
-        image = cv2.resize(frame, None, fx=scale, fy=scale)
+        # scale = (args.long_edge)/frame.shape[0]
+        # image = cv2.resize(frame, None, fx=scale, fy=scale)
+        image = cv2.resize(frame, (1920, 1080))
         height, width, _ = image.shape
         LOG.debug('resized image size: {}'.format(image.shape))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -159,11 +160,12 @@ def webcam(args):
         print(f"Identified {len(dic_out['xyz_pred'])} people")
         print(f"xyz_pred: {dic_out['xyz_pred']}")
 
+        ################## POST DATA ################## 
+        '''
         BASE_URL = 'http://web:8000'
         url = f"{BASE_URL}/add_person_instance/"
 
         camera_to_person_xyz = dic_out['xyz_pred']
-
         for id, xyz in enumerate(camera_to_person_xyz):
             x = xyz[0]
             # y = xyz[1]
@@ -177,7 +179,8 @@ def webcam(args):
             }
 
             x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-
+        '''
+        ############################################### 
         LOG.debug(dic_out)
 
         # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))

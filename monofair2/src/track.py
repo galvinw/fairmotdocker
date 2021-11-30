@@ -135,6 +135,7 @@ def eval_prop():
             
             
             url = f"{BASE_URL}/add_person/"
+            url2 = f"{BASE_URL}/add_person_instance/"
             if len(online_ids) > 0:
                 for id in online_ids:
                     person_id_obj = {
@@ -142,6 +143,7 @@ def eval_prop():
                         "name": f"Person {id}"
                     }
                     y = requests.post(url,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
+                    z = requests.post(url2,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
             # '''
             ############################################### 
 
