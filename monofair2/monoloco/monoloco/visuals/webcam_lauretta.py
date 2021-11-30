@@ -102,6 +102,8 @@ def webcam(args):
     cam = cv2.VideoCapture(cameraIP)
     # cam = cv2.VideoCapture(args.camera)
     visualizer_mono = None
+    
+    frame_id = 0
 
     while True:
         start = time.time()
@@ -143,7 +145,6 @@ def webcam(args):
         boxes, keypoints = preprocess_pifpaf(
             pifpaf_outs['left'], (width, height))
 
-        frame_id = 0
 
         dic_out = net.forward(keypoints, kk)
         dic_out = net.post_process(dic_out, boxes, keypoints, kk)

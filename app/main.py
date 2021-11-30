@@ -77,7 +77,7 @@ async def patch_person_instance(person_instance: PersonInstance):
     person_instance_json = person_instance.json()
     person_instance_dict = json.loads(person_instance_json)
 
-    await PersonInstance.objects.update_or_create(name=person_instance_dict['name'],frame_id=int(person_instance_dict['frame_id']),x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
+    await PersonInstance.objects.update(name=person_instance_dict['name'],frame_id=int(person_instance_dict['frame_id']),x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
     return person_instance_dict
 
 @app.on_event("startup")
