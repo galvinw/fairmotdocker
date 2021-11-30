@@ -13,14 +13,14 @@ Icon?
 *pyc
 
 # FairMOT
-FairMOT/DCNv2/_ext
-FairMOT/DCNv2/build
-FairMOT/models/*.pth
-FairMOT/DCNv2/DCNv2.egg-info
-FairMOT/DCNv2/dist
+*/FairMOT/DCNv2/_ext
+*/FairMOT/DCNv2/build
+*/FairMOT/models/*.pth
+*/FairMOT/DCNv2/DCNv2.egg-info
+*/FairMOT/DCNv2/dist
 
 # Environments
-.env
+# .env
 .venv
 env/
 venv/
@@ -29,3 +29,6 @@ env.bak/
 venv.bak/
 
 videos/*.mp4
+
+# Models
+fairmot_dla34.pth
