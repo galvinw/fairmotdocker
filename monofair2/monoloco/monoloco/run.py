@@ -1,6 +1,7 @@
 # pylint: disable=too-many-branches, too-many-statements, import-outside-toplevel
 
 import argparse
+from math import trunc
 
 from openpifpaf import decoder, network, visualizer, show, logger
 
@@ -136,14 +137,25 @@ def cli():
     return args
 
 
+# def main(frame=False):
 def main():
     args = cli()
+    
+    ''' For integration with FairMOT
+    args.command = 'predict'
+    args.output_types = ['multi']
+    args.webcam = True
+    args.images=['/videos/fastapidemoclip.mp4']
+    '''
+    
     if args.command == 'predict':
         if args.webcam:
             # from .visuals.webcam import webcam
             # webcam(args)
             from .visuals.webcam_lauretta import webcam
             webcam(args)
+            # from .visuals.webcam_fair import webcam
+            # webcam(args, frame)
         else:
             from .predict import predict
             predict(args)

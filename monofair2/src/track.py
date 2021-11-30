@@ -26,9 +26,7 @@ from src.lib.tracking_utils.evaluation import Evaluator
 from src.lib.tracking_utils.utils import mkdir_if_missing
 from src.lib.opts import options
 
-
-
-
+from monoloco.monoloco.run import main as monoloco
 
 def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resize a rectangular image to a padded rectangular
     shape = img.shape[:2]  # shape = [height, width]
@@ -52,7 +50,6 @@ def eval_prop():
     predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
 
 
-
     for element in itertools.cycle(camera_list):
         print(element)
         element = element.split(",")
@@ -64,11 +61,7 @@ def eval_prop():
         camera_shift_time = int(element[6])
         prev_time = time.time()
 
-        if ".mp4" in cameraIP:
-            print(f"Using demo {cameraIP} files...")
-            cap = cv2.VideoCapture(cameraIP)
-        else:
-            cap = cv2.VideoCapture(cameraIP)
+        cap = cv2.VideoCapture(cameraIP)
 
         timer = Timer()
         results = []
@@ -105,12 +98,22 @@ def eval_prop():
                     online_ids.append(tid)
             timer.toc()
             results.append((frame_id + 1, online_tlwhs, online_ids))
+            
+            ''' Output analyzed photos
             online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
                                             fps=1. / timer.average_time)
             # cv2.imshow('online_im', online_im)
             # cv2.waitKey(1)
 
             cv2.imwrite(f'online_im{frame_id}.jpg', online_im)
+            '''
+            
+            ''' Integration with monoloco
+            dic_out = monoloco(img0)
+            print(f"\n============== FairMOT dic_out : {dic_out}\n")
+            '''
+
+
 
             frame_id += 1
 
@@ -119,6 +122,7 @@ def eval_prop():
             # print(len(predictions))
 
             ################## POST DATA ################## 
+            # '''
             BASE_URL = 'http://web:8000'
             
             url = f"{BASE_URL}/add_zone_status/"
@@ -138,6 +142,7 @@ def eval_prop():
                         "name": f"Person {id}"
                     }
                     y = requests.post(url,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
+            # '''
             ############################################### 
 
             # Zone_Status.objects.get_or_create(zone_id=1,number=int(len(predictions)))
@@ -151,7 +156,7 @@ def eval_prop():
             #         timeofcrowdcount = time.time()
 
 
-
+            '''
             for i, entity_id in enumerate(online_ids):
                 imx = np.ascontiguousarray(np.copy(img0))
                 im_h, im_w = imx.shape[:2]
@@ -199,7 +204,7 @@ def eval_prop():
                             "agency": "OTHERS"
                         }
                     }
-
+            '''
 eval_prop()
 
 

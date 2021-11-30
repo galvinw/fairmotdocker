@@ -16,8 +16,6 @@ try:
     import cv2
 except ImportError:
     cv2 = None
-import requests
-import itertools
 
 import openpifpaf
 from openpifpaf import decoder, network, visualizer, show, logger
@@ -26,9 +24,9 @@ from openpifpaf import datasets
 from ..visuals import Printer
 from ..network import Loco, preprocess_pifpaf, load_calibration
 from ..predict import download_checkpoints
+import requests
 
 LOG = logging.getLogger(__name__)
-
 def factory_from_args(args):
 
     # Model
@@ -74,15 +72,8 @@ def factory_from_args(args):
 
     return args, dic_models
 
-def read_camera_config(filename):
-    f = open(filename, "r")
-    camera_list = f.readlines()
-    f.close()
 
-    # cameraName, cameraIP, threshold, lat, longi, _, camera_shift_time = camera_list[0].split(",")
-    return camera_list[0].split(",")
-
-def webcam(args):
+def webcam(args, frame):
 
     assert args.mode in 'mono'
     assert cv2
@@ -97,98 +88,101 @@ def webcam(args):
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
     # Start recording
-    _, cameraIP, _, _, _, _,_ = read_camera_config("/config/cameras.txt")
-    print(cameraIP)
-    cam = cv2.VideoCapture(cameraIP)
+
+    # cam = cv2.VideoCapture(args.images[0])
     # cam = cv2.VideoCapture(args.camera)
     visualizer_mono = None
 
-    while True:
-        start = time.time()
-        ret, frame = cam.read()
-        scale = (args.long_edge)/frame.shape[0]
-        image = cv2.resize(frame, None, fx=scale, fy=scale)
-        height, width, _ = image.shape
-        LOG.debug('resized image size: {}'.format(image.shape))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(image)
+    # while True:
+    start = time.time()
+    # ret, frame = cam.read()
+    scale = (args.long_edge)/frame.shape[0]
+    image = cv2.resize(frame, None, fx=scale, fy=scale)
+    height, width, _ = image.shape
+    LOG.debug('resized image size: {}'.format(image.shape))
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(image)
 
-        data = datasets.PilImageList(
-            [pil_image], preprocess=predictor.preprocess)
+    data = datasets.PilImageList(
+        [pil_image], preprocess=predictor.preprocess)
 
-        data_loader = torch.utils.data.DataLoader(
-            data, batch_size=1, shuffle=False,
-            pin_memory=False, collate_fn=datasets.collate_images_anns_meta)
+    data_loader = torch.utils.data.DataLoader(
+        data, batch_size=1, shuffle=False,
+        pin_memory=False, collate_fn=datasets.collate_images_anns_meta)
 
-        for (_, _, _) in data_loader:
+    for (_, _, _) in data_loader:
 
-            for idx, (preds, _, _) in enumerate(predictor.dataset(data)):
+        for idx, (preds, _, _) in enumerate(predictor.dataset(data)):
 
-                if idx == 0:
-                    pifpaf_outs = {
-                        'pred': preds,
-                        'left': [ann.json_data() for ann in preds],
-                        'image': image}
+            if idx == 0:
+                pifpaf_outs = {
+                    'pred': preds,
+                    'left': [ann.json_data() for ann in preds],
+                    'image': image}
 
-        if not ret:
-            break
-        key = cv2.waitKey(1)
-        if key % 256 == 27:
-            # ESC pressed
-            LOG.info("Escape hit, closing...")
-            break
+    # if not ret:
+    #     break
+    # key = cv2.waitKey(1)
+    # if key % 256 == 27:
+    #     # ESC pressed
+    #     LOG.info("Escape hit, closing...")
+    #     break
 
-        kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
-        boxes, keypoints = preprocess_pifpaf(
-            pifpaf_outs['left'], (width, height))
+    kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
+    boxes, keypoints = preprocess_pifpaf(
+        pifpaf_outs['left'], (width, height))
 
-        dic_out = net.forward(keypoints, kk)
-        dic_out = net.post_process(dic_out, boxes, keypoints, kk)
+    dic_out = net.forward(keypoints, kk)
+    dic_out = net.post_process(dic_out, boxes, keypoints, kk)
 
-        if 'social_distance' in args.activities:
-            dic_out = net.social_distance(dic_out, args)
-        if 'raise_hand' in args.activities:
-            dic_out = net.raising_hand(dic_out, keypoints)
-        if visualizer_mono is None:  # it is, at the beginning
-            visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
-            visualizer_mono.send(None)
+    # if 'social_distance' in args.activities:
+    #     dic_out = net.social_distance(dic_out, args)
+    # if 'raise_hand' in args.activities:
+    #     dic_out = net.raising_hand(dic_out, keypoints)
+    if visualizer_mono is None:  # it is, at the beginning
+        visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
+        visualizer_mono.send(None)
 
-        # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
+    print(f"\n============== monoloco dic_out : {dic_out}\n")
 
-        print(f"request.post ...")
-        print(f"Identified {len(dic_out['xyz_pred'])} people")
-        print(f"xyz_pred: {dic_out['xyz_pred']}")
+    # print(f"request.post ...")
+    # print(f"xyz_pred: {dic_out['xyz_pred']}, social dist: {dic_out['social_distance']}")
 
-        BASE_URL = 'http://web:8000'
-        url = f"{BASE_URL}/add_person_instance/"
 
-        camera_to_person_xyz = dic_out['xyz_pred']
+    # url = 'http://web:8000/add_person_instance/'
 
-        for id, xyz in enumerate(camera_to_person_xyz):
-            x = xyz[0]
-            # y = xyz[1]
-            z = xyz[2]
+    # camera_to_person_xyz = dic_out['xyz_pred']
 
-            person_instance_obj = {
-                        "id": 0,
-                        "name": f"PersonInstance {id}",
-                        "x": x,
-                        "z": z
-            }
+    # personID = 2
+    # for xyz in camera_to_person_xyz:
+    #     x = xyz[0]
+    #     # y = xyz[1]
+    #     z = xyz[2]
 
-            x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+    #     person_instance_obj = {
+    #                 "id": 0,
+    #                 "name": f"PersonInstance{personID}",
+    #                 "x": x,
+    #                 "z": z
+    #     }
 
-        LOG.debug(dic_out)
+    #     x = requests.post(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+        
+    #     personID += 1
 
-        # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
-        # cv2.imshow("Input Video - for debug purpose", frame)
+    LOG.debug(dic_out)
 
-        end = time.time()
-        LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
+    # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
+    # cv2.imshow("Input Video - for debug purpose", frame)
 
-    cam.release()
+    end = time.time()
+    LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
 
-    cv2.destroyAllWindows()
+    # cam.release()
+
+    # cv2.destroyAllWindows()
+
+    return dic_out
 
 
 class Visualizer:
