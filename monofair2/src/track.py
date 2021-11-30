@@ -123,11 +123,10 @@ def eval_prop():
             
             url = f"{BASE_URL}/add_zone_status/"
             zone_status_obj = {
-                        "id": 0,
-                        "create_at": "2021-11-02T16:08:46.505Z",
                         "zone_id": 1,
-                        "number": len(predictions)
-            }
+                        "number": len(online_ids)
+                    }
+                        # "number": len(predictions)    # Using openpifpaf for number of people
             x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
             
             
