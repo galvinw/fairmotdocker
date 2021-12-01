@@ -67,9 +67,9 @@ def eval_prop():
         results = []
         frame_id = 0
         while True:
-            if time.time() - prev_time > camera_shift_time:
-                prev_time = time.time()
-                break
+            # if time.time() - prev_time > camera_shift_time:
+            #     prev_time = time.time()
+            #     break
             res, img0 = cap.read()  # BGR
             # assert img0 is not None, 'Failed to load frame {:d}'.format(self.count)
             img0 = cv2.resize(img0, (1920, 1080))
@@ -105,7 +105,7 @@ def eval_prop():
             # cv2.imshow('online_im', online_im)
             # cv2.waitKey(1)
 
-            cv2.imwrite(f'online_im{frame_id}.jpg', online_im)
+            cv2.imwrite(f'fairmot{frame_id}.jpg', online_im)
             '''
             
             ''' Integration with monoloco
@@ -127,12 +127,16 @@ def eval_prop():
                         "number": len(online_ids)
                     }
                         # "number": len(predictions)    # Using openpifpaf for number of people
-            # print(f"request.post zone_status")
-            x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
             
+            try:
+                x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
+                print(f"POST /add_zone_status")
+            except:
+                print(f"no POST /add_zone_status")
+                continue
             
-            url = f"{BASE_URL}/add_person/"
-            url2 = f"{BASE_URL}/add_person_instance/"
+            url2 = f"{BASE_URL}/add_person/"
+            url3 = f"{BASE_URL}/add_person_instance/"
             if len(online_ids) > 0:
                 for id in online_ids:
                     person_id_obj = {
@@ -144,10 +148,20 @@ def eval_prop():
                         "name": f"Person {id}",
                         "frame_id": frame_id
                     }
-                    # print(f"request.post add_person")
-                    y = requests.post(url,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
-                    # print(f"request.post add_person_instance")
-                    z = requests.post(url2,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                    
+                    try:
+                        y = requests.post(url2,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
+                        print(f"POST /add_person/")
+                    except:
+                        print(f"no POST /add_person/")
+                        continue
+
+                    try:
+                        z = requests.post(url3,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                        print(f"POST /add_person_instance/")
+                    except:
+                        print(f"no POST /add_person_instance/")
+                        continue
             # '''
             ############################################### 
 
