@@ -159,7 +159,6 @@ def webcam(args):
 
         # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
 
-        print(f"request.post ...")
         print(f"Identified {len(dic_out['xyz_pred'])} people")
         print(f"xyz_pred: {dic_out['xyz_pred']}")
 
@@ -168,28 +167,39 @@ def webcam(args):
         BASE_URL = 'http://web:8000'
 
         camera_to_person_xyz = dic_out['xyz_pred']
-        for id, xyz in enumerate(camera_to_person_xyz):
-            x = xyz[0]
-            # y = xyz[1]
-            z = xyz[2]
+  
+        if len(camera_to_person_xyz) > 0:
+            for id, xyz in enumerate(camera_to_person_xyz):
+                x = xyz[0]
+                # y = xyz[1]
+                z = xyz[2]
 
-            person_instance_obj = {
-                        "id": 0,
-                        "name": f"Person {id}",
-                        "frame_id": frame_id,
-                        "x": x,
-                        "z": z
-            }
-            url = f"{BASE_URL}/patch_person_instance/"
-            # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
-            x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                person_instance_obj = {
+                            "id": 0,
+                            "name": f"Person {id+1}",
+                            "frame_id": frame_id,
+                            "x": x,
+                            "z": z
+                }
+                url = f"{BASE_URL}/patch_person_instance/"
+                # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
+                try:
+                    x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                    print(f"POST /patch_person_instance")
+                except:
+                    print(f"no POST /patch_person_instance")
+                    continue
         # '''
         ############################################### 
+            
+        ''' Output analyzed photos
+        cv2.imwrite(f'monoloco{frame_id}.jpg', image)
+        '''
+
         LOG.debug(dic_out)
         frame_id += 1
 
         # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
-        # cv2.imshow("Input Video - for debug purpose", frame)
 
         end = time.time()
         LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
