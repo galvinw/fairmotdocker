@@ -64,7 +64,7 @@ class PersonInstance(ormar.Model):
     frame_id: int = ormar.Integer(nullable=True)
     x:float = ormar.Float(nullable=True)
     z:float = ormar.Float(nullable=True)
-    # create_at: datetime = ormar.DateTime(default=datetime.now)
+    create_at: datetime = ormar.DateTime(default=datetime.now)
 
 class Person(ormar.Model):
     class Meta(BaseMeta):
