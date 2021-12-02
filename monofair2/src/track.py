@@ -45,14 +45,18 @@ def eval_prop():
     opt.task = 'mot'
     f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
+
     f.close()
     tracker = JDETracker(opt, frame_rate=30)
-    predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
+    # predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
 
-
+    flag = 0
     for element in itertools.cycle(camera_list):
         print(element)
-        element = element.split(",")
+        element = element.strip().split(",")
+        if len(element) < 7:
+            print(f"Invalid line at cameras.txt : {element}")
+            continue
         cameraName = element[0]
         cameraIP = element[1]
         threshold = element[2]
@@ -60,8 +64,13 @@ def eval_prop():
         longi = element[4]
         camera_shift_time = int(element[6])
         prev_time = time.time()
-
-        cap = cv2.VideoCapture(cameraIP)
+        
+        try:
+            print(f"Reading: {cameraIP}")
+            cap = cv2.VideoCapture(cameraIP)
+        except Exception as e:
+            print(f"Unable to read camera")
+            continue
 
         timer = Timer()
         results = []
@@ -70,15 +79,33 @@ def eval_prop():
             # if time.time() - prev_time > camera_shift_time:
             #     prev_time = time.time()
             #     break
-            res, img0 = cap.read()  # BGR
-            # assert img0 is not None, 'Failed to load frame {:d}'.format(self.count)
-            img0 = cv2.resize(img0, (1920, 1080))
+
+            try:
+                res, img0 = cap.read()  # BGR
+                # assert img0 is not None, 'Failed to load frame {:d}'.format(self.count)
+            except Exception as e:
+                continue
+            
+            if res:
+                img0 = cv2.resize(img0, (1920, 1080))
+                flag = 0
+            else:
+                flag += 1
+                if flag < 10:
+                    print(f"Unable to resize, skipping frame...")
+                    continue
+                else:
+                    print(f"Unable to resize frames after multiple attempts, skipping to next camera...")
+                    break
+            
             img, _, _, _ = letterbox(img0, height=1088, width =608)
             img = img[:, :, ::-1].transpose(2, 0, 1)
             img = np.ascontiguousarray(img, dtype=np.float32)
             img /= 255.0
 
+            ''' activate openpifpaf 
             predictions, gt_anns, meta = predictor_pifpaf.numpy_image(img0)
+            '''
         
             timer.tic()
             if opt.device == torch.device('cpu'):
@@ -167,7 +194,7 @@ def eval_prop():
 
             frame_id += 1
 
-            my_date = datetime.now()
+            # my_date = datetime.now()
 
             # Zone_Status.objects.get_or_create(zone_id=1,number=int(len(predictions)))
             # if int(threshold) < len(predictions):
