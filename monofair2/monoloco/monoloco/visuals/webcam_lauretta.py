@@ -106,156 +106,125 @@ def webcam(args):
         longi = element[4]
         camera_shift_time = int(element[6])
         prev_time = time.time()
-        
+            
         try:
             print(f"Reading: {cameraIP}")
             cam = cv2.VideoCapture(cameraIP)
             # cam = cv2.VideoCapture(args.camera)
-        except Exception as e:
-            print(f"Unable to read camera feed")
-            continue
 
-        if (cam.isOpened() == False):
-            print("Camera feed is not running...")
-            continue
+            visualizer_mono = None
+            
+            frame_id = 0
 
-        visualizer_mono = None
-        
-        frame_id = 0
+            while True:
+                start = time.time()
 
-        while True:
-            start = time.time()
-
-            try:
                 ret, frame = cam.read()
-            except Exception as e:
-                print(f"Unable to read frame")
-                continue    
 
-            if ret and frame is not None:
+                # if ret and frame is not None:
                 image = cv2.resize(frame, (1920, 1080))
-            else:
-                print(f"Unable to resize frame")
-                try:
-                    print(f"monoloco type frame : {type(frame)}")
-                except:
-                    print(f"monoloco unable to print type frame")
-                    pass
-                try:
-                    print(f"monoloco shape frame : {frame.shape}")
-                except:
-                    print(f"monoloco unable to print shape frame")
-                    pass
-                try:
-                    print(f"monoloco size frame : {frame.size}")
-                except:
-                    print(f"monoloco unable to print size frame")
-                    pass
-                try:
-                    print(f"monoloco byte size frame : {frame.nbytes}")
-                except:
-                    print(f"monoloco unable to print byte size frame")
-                    pass
-                continue
 
-            # scale = (args.long_edge)/frame.shape[0]
-            # image = cv2.resize(frame, None, fx=scale, fy=scale)
-            height, width, _ = image.shape
-            LOG.debug('resized image size: {}'.format(image.shape))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(image)
+                # scale = (args.long_edge)/frame.shape[0]
+                # image = cv2.resize(frame, None, fx=scale, fy=scale)
+                height, width, _ = image.shape
+                LOG.debug('resized image size: {}'.format(image.shape))
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                pil_image = Image.fromarray(image)
 
-            data = datasets.PilImageList(
-                [pil_image], preprocess=predictor.preprocess)
+                data = datasets.PilImageList(
+                    [pil_image], preprocess=predictor.preprocess)
 
-            data_loader = torch.utils.data.DataLoader(
-                data, batch_size=1, shuffle=False,
-                pin_memory=False, collate_fn=datasets.collate_images_anns_meta)
+                data_loader = torch.utils.data.DataLoader(
+                    data, batch_size=1, shuffle=False,
+                    pin_memory=False, collate_fn=datasets.collate_images_anns_meta)
 
-            for (_, _, _) in data_loader:
+                for (_, _, _) in data_loader:
 
-                for idx, (preds, _, _) in enumerate(predictor.dataset(data)):
+                    for idx, (preds, _, _) in enumerate(predictor.dataset(data)):
 
-                    if idx == 0:
-                        pifpaf_outs = {
-                            'pred': preds,
-                            'left': [ann.json_data() for ann in preds],
-                            'image': image}
+                        if idx == 0:
+                            pifpaf_outs = {
+                                'pred': preds,
+                                'left': [ann.json_data() for ann in preds],
+                                'image': image}
 
-            if not ret:
-                break
-            key = cv2.waitKey(1)
-            if key % 256 == 27:
-                # ESC pressed
-                LOG.info("Escape hit, closing...")
-                break
+                # if not ret:
+                #     break
+                # key = cv2.waitKey(1)
+                # if key % 256 == 27:
+                #     # ESC pressed
+                #     LOG.info("Escape hit, closing...")
+                #     break
 
-            kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
-            boxes, keypoints = preprocess_pifpaf(
-                pifpaf_outs['left'], (width, height))
+                kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
+                boxes, keypoints = preprocess_pifpaf(
+                    pifpaf_outs['left'], (width, height))
 
 
-            dic_out = net.forward(keypoints, kk)
-            dic_out = net.post_process(dic_out, boxes, keypoints, kk)
+                dic_out = net.forward(keypoints, kk)
+                dic_out = net.post_process(dic_out, boxes, keypoints, kk)
 
-            if 'social_distance' in args.activities:
-                dic_out = net.social_distance(dic_out, args)
-            if 'raise_hand' in args.activities:
-                dic_out = net.raising_hand(dic_out, keypoints)
-            if visualizer_mono is None:  # it is, at the beginning
-                visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
-                visualizer_mono.send(None)
+                if 'social_distance' in args.activities:
+                    dic_out = net.social_distance(dic_out, args)
+                if 'raise_hand' in args.activities:
+                    dic_out = net.raising_hand(dic_out, keypoints)
+                if visualizer_mono is None:  # it is, at the beginning
+                    visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
+                    visualizer_mono.send(None)
 
-            # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
+                # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
 
-            print(f"Identified {len(dic_out['xyz_pred'])} people")
-            print(f"xyz_pred: {dic_out['xyz_pred']}")
+                print(f"Identified {len(dic_out['xyz_pred'])} people")
+                print(f"xyz_pred: {dic_out['xyz_pred']}")
 
-            ################## POST DATA ################## 
-            # '''
-            BASE_URL = 'http://web:8000'
+                ################## POST DATA ################## 
+                # '''
+                BASE_URL = 'http://web:8000'
 
-            camera_to_person_xyz = dic_out['xyz_pred']
-    
-            if len(camera_to_person_xyz) > 0:
-                for id, xyz in enumerate(camera_to_person_xyz):
-                    x = xyz[0]
-                    # y = xyz[1]
-                    z = xyz[2]
+                camera_to_person_xyz = dic_out['xyz_pred']
+        
+                if len(camera_to_person_xyz) > 0:
+                    for id, xyz in enumerate(camera_to_person_xyz):
+                        x = xyz[0]
+                        # y = xyz[1]
+                        z = xyz[2]
 
-                    person_instance_obj = {
-                                "id": 0,
-                                "name": f"Person {id+1}",
-                                "frame_id": frame_id,
-                                "x": x,
-                                "z": z
-                    }
-                    url = f"{BASE_URL}/patch_person_instance/"
-                    # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
-                    try:
-                        x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-                        print(f"POST /patch_person_instance")
-                    except:
-                        print(f"no POST /patch_person_instance")
-                        continue
-            # '''
-            ############################################### 
-                
-            ''' Output analyzed photos
-            cv2.imwrite(f'monoloco{frame_id}.jpg', image)
-            '''
+                        person_instance_obj = {
+                                    "id": 0,
+                                    "name": f"Person {id+1}",
+                                    "frame_id": frame_id,
+                                    "x": x,
+                                    "z": z
+                        }
+                        url = f"{BASE_URL}/patch_person_instance/"
+                        # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
+                        try:
+                            x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                            print(f"POST /patch_person_instance")
+                        except:
+                            print(f"no POST /patch_person_instance")
+                            continue
+                # '''
+                ############################################### 
+                    
+                ''' Output analyzed photos
+                cv2.imwrite(f'monoloco{frame_id}.jpg', image)
+                '''
 
-            LOG.debug(dic_out)
-            frame_id += 1
+                LOG.debug(dic_out)
+                frame_id += 1
 
-            # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
+                # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
 
-            end = time.time()
-            LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
+                end = time.time()
+                LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
 
-        # cam.release()
+            # cam.release()
 
-        # cv2.destroyAllWindows()
+            # cv2.destroyAllWindows()
+        except:
+            print("Re-reading camera feed...")
+            continue
 
 
 class Visualizer:

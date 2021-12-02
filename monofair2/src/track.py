@@ -67,213 +67,182 @@ def eval_prop():
         try:
             print(f"Reading: {cameraIP}")
             cap = cv2.VideoCapture(cameraIP)
-        except Exception as e:
-            print(f"Unable to read camera feed")
-            continue
 
-        if (cap.isOpened() == False):
-            print("Camera feed is not running...")
-            continue
+            timer = Timer()
+            results = []
+            frame_id = 0
+            while True:
+                # if time.time() - prev_time > camera_shift_time:
+                #     prev_time = time.time()
+                #     break
 
-        timer = Timer()
-        results = []
-        frame_id = 0
-        while True:
-            # if time.time() - prev_time > camera_shift_time:
-            #     prev_time = time.time()
-            #     break
-
-            try:
                 res, img0 = cap.read()  # BGR
                 # assert img0 is not None, 'Failed to load frame {:d}'.format(self.count)
-            except Exception as e:
-                print(f"Unable to read frame")
-                continue
-            
-            if res and img0 is not None:
+    
+                
+                # if res and img0 is not None:
                 img0 = cv2.resize(img0, (1920, 1080))
-            else:
-                print(f"Unable to resize frame")
-                try:
-                    print(f"fair type img0 : {type(img0)}")
-                except:
-                    print(f"fair unable to print type img0")
-                    pass
-                try:
-                    print(f"fair shape img0 : {img0.shape}")
-                except:
-                    print(f"fair unable to print shape img0")
-                    pass
-                try:
-                    print(f"fair size img0 : {img0.size}")
-                except:
-                    print(f"fair unable to print size img0")
-                    pass
-                try:
-                    print(f"fair byte size img0 : {img0.nbytes}")
-                except:
-                    print(f"fair unable to print byte size img0")
-                    pass
-                continue
+                img, _, _, _ = letterbox(img0, height=1088, width =608)
+                img = img[:, :, ::-1].transpose(2, 0, 1)
+                img = np.ascontiguousarray(img, dtype=np.float32)
+                img /= 255.0
+
+                ''' activate openpifpaf 
+                predictions, gt_anns, meta = predictor_pifpaf.numpy_image(img0)
+                '''
             
-            img, _, _, _ = letterbox(img0, height=1088, width =608)
-            img = img[:, :, ::-1].transpose(2, 0, 1)
-            img = np.ascontiguousarray(img, dtype=np.float32)
-            img /= 255.0
+                timer.tic()
+                if opt.device == torch.device('cpu'):
+                    blob = torch.from_numpy(img).unsqueeze(0)
+                else:
+                    blob = torch.from_numpy(img).cuda().unsqueeze(0)
 
-            ''' activate openpifpaf 
-            predictions, gt_anns, meta = predictor_pifpaf.numpy_image(img0)
-            '''
-        
-            timer.tic()
-            if opt.device == torch.device('cpu'):
-                blob = torch.from_numpy(img).unsqueeze(0)
-            else:
-                blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                online_targets = tracker.update(blob, img0)
+                online_tlwhs = []
+                online_ids = []
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    vertical = tlwh[2] / tlwh[3] > 1.6
+                    if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                timer.toc()
+                results.append((frame_id + 1, online_tlwhs, online_ids))
+                
+                ''' Output analyzed photos
+                online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
+                                                fps=1. / timer.average_time)
+                # cv2.imshow('online_im', online_im)
+                # cv2.waitKey(1)
 
-            online_targets = tracker.update(blob, img0)
-            online_tlwhs = []
-            online_ids = []
-            for t in online_targets:
-                tlwh = t.tlwh
-                tid = t.track_id
-                vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
-                    online_tlwhs.append(tlwh)
-                    online_ids.append(tid)
-            timer.toc()
-            results.append((frame_id + 1, online_tlwhs, online_ids))
-            
-            ''' Output analyzed photos
-            online_im = vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
-                                            fps=1. / timer.average_time)
-            # cv2.imshow('online_im', online_im)
-            # cv2.waitKey(1)
-
-            cv2.imwrite(f'fairmot{frame_id}.jpg', online_im)
-            '''
-            
-            ''' Integration with monoloco
-            dic_out = monoloco(img0)
-            print(f"\n============== FairMOT dic_out : {dic_out}\n")
-            '''
+                cv2.imwrite(f'fairmot{frame_id}.jpg', online_im)
+                '''
+                
+                ''' Integration with monoloco
+                dic_out = monoloco(img0)
+                print(f"\n============== FairMOT dic_out : {dic_out}\n")
+                '''
 
 
+                # print(len(predictions))
 
-            # print(len(predictions))
-
-            ################## POST DATA ################## 
-            # '''
-            BASE_URL = 'http://web:8000'
-            
-            url = f"{BASE_URL}/add_zone_status/"
-            zone_status_obj = {
-                        "zone_id": 1,
-                        "number": len(online_ids)
-                    }
-                        # "number": len(predictions)    # Using openpifpaf for number of people
-            
-            try:
-                x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
-                print(f"POST /add_zone_status")
-            except:
-                print(f"no POST /add_zone_status")
-                continue
-            
-            url2 = f"{BASE_URL}/add_person/"
-            url3 = f"{BASE_URL}/add_person_instance/"
-            if len(online_ids) > 0:
-                for id in online_ids:
-                    person_id_obj = {
-                        "id": id,
-                        "name": f"Person {id}"
-                    }
-                    person_instance_obj = {
-                        "id": id,
-                        "name": f"Person {id}",
-                        "frame_id": frame_id
-                    }
-                    
-                    try:
-                        y = requests.post(url2,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
-                        print(f"POST /add_person/")
-                    except:
-                        print(f"no POST /add_person/")
-                        continue
-
-                    try:
-                        z = requests.post(url3,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-                        print(f"POST /add_person_instance/")
-                    except:
-                        print(f"no POST /add_person_instance/")
-                        continue
-            # '''
-            ############################################### 
-
-            frame_id += 1
-
-            # my_date = datetime.now()
-
-            # Zone_Status.objects.get_or_create(zone_id=1,number=int(len(predictions)))
-            # if int(threshold) < len(predictions):
-            #     threshold = threshold + 1
-            #     element[2] = str(threshold)
-            #     url = 'http://145.12.244.4:4011/api/va/crowdcount'
-            #     if time.time() -  timeofcrowdcount > 60:
-            #         print("Sending Crowd Alert")
-            #         x = requests.post(url,json=crowdCount_obj,headers={"content-type":"application/json","x-api-key":"6cf06df6bb9d4bee82c6a965c166c973"})
-            #         timeofcrowdcount = time.time()
-
-
-            '''
-            for i, entity_id in enumerate(online_ids):
-                imx = np.ascontiguousarray(np.copy(img0))
-                im_h, im_w = imx.shape[:2]
-
-                x1, y1, w, h = online_tlwhs[i]
-                x1,y1,w,h = int(x1), int(y1), int(w), int(h)
-                person_interest = imx[y1:y1+h, x1:x1+w]
-
-                retval, buffer = cv2.imencode('.jpg', person_interest)
-                jpg_as_text = base64.b64encode(buffer)
-
-                jpg_as_text = base64.b64encode(buffer)
-                    
-                img_bytes = len(jpg_as_text) * 3/4 
-
-                tracking_obj = {
-                        "camName": cameraName,
-                        "alertTime": my_date.isoformat(),
-                        "subjectId": entity_id,
-                        "location": {
-                            "latInDegrees": lat,
-                            "lonInDegrees": longi
-                        },
-                        "imagePayload":{
-                            "fileName": str(frame_id) + ".jpg",
-                            "data": jpg_as_text,
-                            "mimeType": "image/jpeg",
-                            "size": img_bytes,
-                            "confidence": "1"
-                        },
-                        "createInfo":{
-                            "dateTime": my_date.isoformat(),
-                            "sourceSystemId": "ARMY",
-                            "action": "CREATE",
-                            "userId": "VA System",
-                            "username": "VA System",
-                            "agency": "OTHERS"
-                        },
-                        "updateInfo":{
-                            "dateTime": my_date.isoformat(),
-                            "sourceSystemId": "ARMY",
-                            "action": "CREATE",
-                            "userId": "VA System",
-                            "username": "VA System",
-                            "agency": "OTHERS"
+                ################## POST DATA ################## 
+                # '''
+                BASE_URL = 'http://web:8000'
+                
+                url = f"{BASE_URL}/add_zone_status/"
+                zone_status_obj = {
+                            "zone_id": 1,
+                            "number": len(online_ids)
                         }
-                    }
-            '''
+                            # "number": len(predictions)    # Using openpifpaf for number of people
+                
+                try:
+                    x = requests.post(url,json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
+                    print(f"POST /add_zone_status")
+                except:
+                    print(f"no POST /add_zone_status")
+                    continue
+                
+                url2 = f"{BASE_URL}/add_person/"
+                url3 = f"{BASE_URL}/add_person_instance/"
+                if len(online_ids) > 0:
+                    for id in online_ids:
+                        person_id_obj = {
+                            "id": id,
+                            "name": f"Person {id}"
+                        }
+                        person_instance_obj = {
+                            "id": id,
+                            "name": f"Person {id}",
+                            "frame_id": frame_id
+                        }
+                        
+                        try:
+                            y = requests.post(url2,json=person_id_obj,headers={"content-type":"application/json","accept":"application/json"})
+                            print(f"POST /add_person/")
+                        except:
+                            print(f"no POST /add_person/")
+                            continue
+
+                        try:
+                            z = requests.post(url3,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                            print(f"POST /add_person_instance/")
+                        except:
+                            print(f"no POST /add_person_instance/")
+                            continue
+                # '''
+                ############################################### 
+
+                frame_id += 1
+
+                # my_date = datetime.now()
+
+                # Zone_Status.objects.get_or_create(zone_id=1,number=int(len(predictions)))
+                # if int(threshold) < len(predictions):
+                #     threshold = threshold + 1
+                #     element[2] = str(threshold)
+                #     url = 'http://145.12.244.4:4011/api/va/crowdcount'
+                #     if time.time() -  timeofcrowdcount > 60:
+                #         print("Sending Crowd Alert")
+                #         x = requests.post(url,json=crowdCount_obj,headers={"content-type":"application/json","x-api-key":"6cf06df6bb9d4bee82c6a965c166c973"})
+                #         timeofcrowdcount = time.time()
+
+
+                '''
+                for i, entity_id in enumerate(online_ids):
+                    imx = np.ascontiguousarray(np.copy(img0))
+                    im_h, im_w = imx.shape[:2]
+
+                    x1, y1, w, h = online_tlwhs[i]
+                    x1,y1,w,h = int(x1), int(y1), int(w), int(h)
+                    person_interest = imx[y1:y1+h, x1:x1+w]
+
+                    retval, buffer = cv2.imencode('.jpg', person_interest)
+                    jpg_as_text = base64.b64encode(buffer)
+
+                    jpg_as_text = base64.b64encode(buffer)
+                        
+                    img_bytes = len(jpg_as_text) * 3/4 
+
+                    tracking_obj = {
+                            "camName": cameraName,
+                            "alertTime": my_date.isoformat(),
+                            "subjectId": entity_id,
+                            "location": {
+                                "latInDegrees": lat,
+                                "lonInDegrees": longi
+                            },
+                            "imagePayload":{
+                                "fileName": str(frame_id) + ".jpg",
+                                "data": jpg_as_text,
+                                "mimeType": "image/jpeg",
+                                "size": img_bytes,
+                                "confidence": "1"
+                            },
+                            "createInfo":{
+                                "dateTime": my_date.isoformat(),
+                                "sourceSystemId": "ARMY",
+                                "action": "CREATE",
+                                "userId": "VA System",
+                                "username": "VA System",
+                                "agency": "OTHERS"
+                            },
+                            "updateInfo":{
+                                "dateTime": my_date.isoformat(),
+                                "sourceSystemId": "ARMY",
+                                "action": "CREATE",
+                                "userId": "VA System",
+                                "username": "VA System",
+                                "agency": "OTHERS"
+                            }
+                        }
+                '''
+        except:
+            print("Re-reading camera feed...")
+            continue
+
 eval_prop()
 
 
