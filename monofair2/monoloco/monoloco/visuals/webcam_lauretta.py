@@ -93,7 +93,7 @@ def webcam(args):
     # for openpifpaf predicitons
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
-    # flag = 0
+    flag = 0
     for element in itertools.cycle(camera_list):
         print(element)
         element = element.strip().split(",")
@@ -135,21 +135,25 @@ def webcam(args):
 
             if ret:
                 print(f"monoloco type frame : {type(frame)}")
+                print(f"monoloco shape frame : {frame.shape}")
+                print(f"monoloco size frame : {frame.size}")
+                print(f"monoloco byte size frame : {frame.nbytes}")
                 image = cv2.resize(frame, (1920, 1080))
-            else:
-                continue
+            # else:
+            #     print("fail to resize")
+            #     continue
 
-            '''  Manual loop system
+            # '''  Manual loop system
                 flag = 0
             else:
                 flag += 1
-                if flag < 10:
+                if flag < 5:
                     print(f"Unable to resize, skipping frame...")
                     continue
                 else:
                     print(f"Unable to resize frames after multiple attempts, skipping to next camera...")
                     break
-            '''
+            # '''
 
             # scale = (args.long_edge)/frame.shape[0]
             # image = cv2.resize(frame, None, fx=scale, fy=scale)

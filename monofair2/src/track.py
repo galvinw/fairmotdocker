@@ -50,7 +50,7 @@ def eval_prop():
     tracker = JDETracker(opt, frame_rate=30)
     # predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
 
-    # flag = 0
+    flag = 0
     for element in itertools.cycle(camera_list):
         print(element)
         element = element.strip().split(",")
@@ -94,20 +94,22 @@ def eval_prop():
                 print(f"fair type img0 : {type(img0)}")
                 print(f"fair shape img0 : {img0.shape}")
                 print(f"fair size img0 : {img0.size}")
+                print(f"fair byte size img0 : {img0.nbytes}")
                 img0 = cv2.resize(img0, (1920, 1080))
-            else:
-                continue
-            '''  Manual loop system
+            # else:
+            #     print("fail to resize")
+            #     continue
+            # '''  Manual loop system
                 flag = 0
             else:
                 flag += 1
-                if flag < 10:
+                if flag < 5:
                     print(f"Unable to resize, skipping frame...")
                     continue
                 else:
                     print(f"Unable to resize frames after multiple attempts, skipping to next camera...")
                     break
-            '''
+            # '''
             
             img, _, _, _ = letterbox(img0, height=1088, width =608)
             img = img[:, :, ::-1].transpose(2, 0, 1)
