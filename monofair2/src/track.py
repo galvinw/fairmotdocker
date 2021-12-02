@@ -69,7 +69,11 @@ def eval_prop():
             print(f"Reading: {cameraIP}")
             cap = cv2.VideoCapture(cameraIP)
         except Exception as e:
-            print(f"Unable to read camera")
+            print(f"Unable to read camera feed")
+            continue
+
+        if (cap.isOpened() == False):
+            print("Camera feed is not running...")
             continue
 
         timer = Timer()
@@ -87,6 +91,7 @@ def eval_prop():
                 continue
             
             if res:
+                print(f"fair type img0 : {type(img0)}")
                 img0 = cv2.resize(img0, (1920, 1080))
             else:
                 continue

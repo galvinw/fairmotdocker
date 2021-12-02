@@ -116,6 +116,10 @@ def webcam(args):
             print(f"Unable to read camera")
             continue
 
+        if (cam.isOpened() == False):
+            print("Camera feed is not running...")
+            continue
+
         visualizer_mono = None
         
         frame_id = 0
@@ -130,6 +134,7 @@ def webcam(args):
                 continue    
 
             if ret:
+                print(f"monoloco type frame : {type(frame)}")
                 image = cv2.resize(frame, (1920, 1080))
             else:
                 continue
