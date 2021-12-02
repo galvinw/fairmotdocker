@@ -91,10 +91,6 @@ def eval_prop():
                 continue
             
             if res:
-                print(f"fair type img0 : {type(img0)}")
-                print(f"fair shape img0 : {img0.shape}")
-                print(f"fair size img0 : {img0.size}")
-                print(f"fair byte size img0 : {img0.nbytes}")
                 img0 = cv2.resize(img0, (1920, 1080))
             # else:
             #     print("fail to resize")
@@ -102,6 +98,10 @@ def eval_prop():
             # '''  Manual loop system
                 flag = 0
             else:
+                print(f"fair type img0 : {type(img0)}")
+                print(f"fair shape img0 : {img0.shape}")
+                print(f"fair size img0 : {img0.size}")
+                print(f"fair byte size img0 : {img0.nbytes}")
                 flag += 1
                 if flag < 5:
                     print(f"Unable to resize, skipping frame...")

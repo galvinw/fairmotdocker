@@ -134,10 +134,6 @@ def webcam(args):
                 continue    
 
             if ret:
-                print(f"monoloco type frame : {type(frame)}")
-                print(f"monoloco shape frame : {frame.shape}")
-                print(f"monoloco size frame : {frame.size}")
-                print(f"monoloco byte size frame : {frame.nbytes}")
                 image = cv2.resize(frame, (1920, 1080))
             # else:
             #     print("fail to resize")
@@ -146,6 +142,10 @@ def webcam(args):
             # '''  Manual loop system
                 flag = 0
             else:
+                print(f"monoloco type frame : {type(frame)}")
+                print(f"monoloco shape frame : {frame.shape}")
+                print(f"monoloco size frame : {frame.size}")
+                print(f"monoloco byte size frame : {frame.nbytes}")
                 flag += 1
                 if flag < 5:
                     print(f"Unable to resize, skipping frame...")
