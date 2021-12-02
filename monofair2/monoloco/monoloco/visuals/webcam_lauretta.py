@@ -93,7 +93,7 @@ def webcam(args):
     # for openpifpaf predicitons
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
-    flag = 0
+    # flag = 0
     for element in itertools.cycle(camera_list):
         print(element)
         element = element.strip().split(",")
@@ -131,6 +131,10 @@ def webcam(args):
 
             if ret:
                 image = cv2.resize(frame, (1920, 1080))
+            else:
+                continue
+
+            '''  Manual loop system
                 flag = 0
             else:
                 flag += 1
@@ -140,6 +144,7 @@ def webcam(args):
                 else:
                     print(f"Unable to resize frames after multiple attempts, skipping to next camera...")
                     break
+            '''
 
             # scale = (args.long_edge)/frame.shape[0]
             # image = cv2.resize(frame, None, fx=scale, fy=scale)
