@@ -92,6 +92,8 @@ def eval_prop():
             
             if res:
                 print(f"fair type img0 : {type(img0)}")
+                print(f"fair shape img0 : {img0.shape}")
+                print(f"fair size img0 : {img0.size}")
                 img0 = cv2.resize(img0, (1920, 1080))
             else:
                 continue
