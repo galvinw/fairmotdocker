@@ -50,7 +50,6 @@ def eval_prop():
     tracker = JDETracker(opt, frame_rate=30)
     # predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
 
-    flag = 0
     for element in itertools.cycle(camera_list):
         print(element)
         element = element.strip().split(",")
@@ -88,28 +87,34 @@ def eval_prop():
                 res, img0 = cap.read()  # BGR
                 # assert img0 is not None, 'Failed to load frame {:d}'.format(self.count)
             except Exception as e:
+                print(f"Unable to read frame")
                 continue
             
-            if res:
+            if res and img0 is not None:
                 img0 = cv2.resize(img0, (1920, 1080))
-            # else:
-            #     print("fail to resize")
-            #     continue
-            # '''  Manual loop system
-                flag = 0
             else:
-                print(f"fair type img0 : {type(img0)}")
-                print(f"fair shape img0 : {img0.shape}")
-                print(f"fair size img0 : {img0.size}")
-                print(f"fair byte size img0 : {img0.nbytes}")
-                flag += 1
-                if flag < 5:
-                    print(f"Unable to resize, skipping frame...")
-                    continue
-                else:
-                    print(f"Unable to resize frames after multiple attempts, skipping to next camera...")
-                    break
-            # '''
+                print(f"Unable to resize frame")
+                try:
+                    print(f"fair type img0 : {type(img0)}")
+                except:
+                    print(f"fair unable to print type img0")
+                    pass
+                try:
+                    print(f"fair shape img0 : {img0.shape}")
+                except:
+                    print(f"fair unable to print shape img0")
+                    pass
+                try:
+                    print(f"fair size img0 : {img0.size}")
+                except:
+                    print(f"fair unable to print size img0")
+                    pass
+                try:
+                    print(f"fair byte size img0 : {img0.nbytes}")
+                except:
+                    print(f"fair unable to print byte size img0")
+                    pass
+                continue
             
             img, _, _, _ = letterbox(img0, height=1088, width =608)
             img = img[:, :, ::-1].transpose(2, 0, 1)

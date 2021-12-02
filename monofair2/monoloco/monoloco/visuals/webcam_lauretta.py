@@ -93,7 +93,6 @@ def webcam(args):
     # for openpifpaf predicitons
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
-    flag = 0
     for element in itertools.cycle(camera_list):
         print(element)
         element = element.strip().split(",")
@@ -113,7 +112,7 @@ def webcam(args):
             cam = cv2.VideoCapture(cameraIP)
             # cam = cv2.VideoCapture(args.camera)
         except Exception as e:
-            print(f"Unable to read camera")
+            print(f"Unable to read camera feed")
             continue
 
         if (cam.isOpened() == False):
@@ -133,27 +132,31 @@ def webcam(args):
                 print(f"Unable to read frame")
                 continue    
 
-            if ret:
+            if ret and frame is not None:
                 image = cv2.resize(frame, (1920, 1080))
-            # else:
-            #     print("fail to resize")
-            #     continue
-
-            # '''  Manual loop system
-                flag = 0
             else:
-                print(f"monoloco type frame : {type(frame)}")
-                print(f"monoloco shape frame : {frame.shape}")
-                print(f"monoloco size frame : {frame.size}")
-                print(f"monoloco byte size frame : {frame.nbytes}")
-                flag += 1
-                if flag < 5:
-                    print(f"Unable to resize, skipping frame...")
-                    continue
-                else:
-                    print(f"Unable to resize frames after multiple attempts, skipping to next camera...")
-                    break
-            # '''
+                print(f"Unable to resize frame")
+                try:
+                    print(f"monoloco type frame : {type(frame)}")
+                except:
+                    print(f"monoloco unable to print type frame")
+                    pass
+                try:
+                    print(f"monoloco shape frame : {frame.shape}")
+                except:
+                    print(f"monoloco unable to print shape frame")
+                    pass
+                try:
+                    print(f"monoloco size frame : {frame.size}")
+                except:
+                    print(f"monoloco unable to print size frame")
+                    pass
+                try:
+                    print(f"monoloco byte size frame : {frame.nbytes}")
+                except:
+                    print(f"monoloco unable to print byte size frame")
+                    pass
+                continue
 
             # scale = (args.long_edge)/frame.shape[0]
             # image = cv2.resize(frame, None, fx=scale, fy=scale)
