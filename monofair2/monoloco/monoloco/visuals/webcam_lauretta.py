@@ -74,14 +74,6 @@ def factory_from_args(args):
 
     return args, dic_models
 
-def read_camera_config(filename):
-    f = open(filename, "r")
-    camera_list = f.readlines()
-    f.close()
-
-    # cameraName, cameraIP, threshold, lat, longi, _, camera_shift_time = camera_list[0].split(",")
-    return camera_list[0].split(",")
-
 def webcam(args):
 
     assert args.mode in 'mono'
@@ -93,120 +85,146 @@ def webcam(args):
     net = Loco(model=dic_models[args.mode], mode=args.mode, device=args.device,
                n_dropout=args.n_dropout, p_dropout=args.dropout)
 
+    f = open("/config/cameras.txt", "r")
+    camera_list = f.readlines()
+
+    f.close()
+
     # for openpifpaf predicitons
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
-    # Start recording
-    _, cameraIP, _, _, _, _,_ = read_camera_config("/config/cameras.txt")
-    print(cameraIP)
-    cam = cv2.VideoCapture(cameraIP)
-    # cam = cv2.VideoCapture(args.camera)
-    visualizer_mono = None
-    
-    frame_id = 0
-
-    while True:
-        start = time.time()
-        ret, frame = cam.read()
-        # scale = (args.long_edge)/frame.shape[0]
-        # image = cv2.resize(frame, None, fx=scale, fy=scale)
-        image = cv2.resize(frame, (1920, 1080))
-        height, width, _ = image.shape
-        LOG.debug('resized image size: {}'.format(image.shape))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(image)
-
-        data = datasets.PilImageList(
-            [pil_image], preprocess=predictor.preprocess)
-
-        data_loader = torch.utils.data.DataLoader(
-            data, batch_size=1, shuffle=False,
-            pin_memory=False, collate_fn=datasets.collate_images_anns_meta)
-
-        for (_, _, _) in data_loader:
-
-            for idx, (preds, _, _) in enumerate(predictor.dataset(data)):
-
-                if idx == 0:
-                    pifpaf_outs = {
-                        'pred': preds,
-                        'left': [ann.json_data() for ann in preds],
-                        'image': image}
-
-        if not ret:
-            break
-        key = cv2.waitKey(1)
-        if key % 256 == 27:
-            # ESC pressed
-            LOG.info("Escape hit, closing...")
-            break
-
-        kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
-        boxes, keypoints = preprocess_pifpaf(
-            pifpaf_outs['left'], (width, height))
-
-
-        dic_out = net.forward(keypoints, kk)
-        dic_out = net.post_process(dic_out, boxes, keypoints, kk)
-
-        if 'social_distance' in args.activities:
-            dic_out = net.social_distance(dic_out, args)
-        if 'raise_hand' in args.activities:
-            dic_out = net.raising_hand(dic_out, keypoints)
-        if visualizer_mono is None:  # it is, at the beginning
-            visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
-            visualizer_mono.send(None)
-
-        # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
-
-        print(f"Identified {len(dic_out['xyz_pred'])} people")
-        print(f"xyz_pred: {dic_out['xyz_pred']}")
-
-        ################## POST DATA ################## 
-        # '''
-        BASE_URL = 'http://web:8000'
-
-        camera_to_person_xyz = dic_out['xyz_pred']
-  
-        if len(camera_to_person_xyz) > 0:
-            for id, xyz in enumerate(camera_to_person_xyz):
-                x = xyz[0]
-                # y = xyz[1]
-                z = xyz[2]
-
-                person_instance_obj = {
-                            "id": 0,
-                            "name": f"Person {id+1}",
-                            "frame_id": frame_id,
-                            "x": x,
-                            "z": z
-                }
-                url = f"{BASE_URL}/patch_person_instance/"
-                # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
-                try:
-                    x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-                    print(f"POST /patch_person_instance")
-                except:
-                    print(f"no POST /patch_person_instance")
-                    continue
-        # '''
-        ############################################### 
+    for element in itertools.cycle(camera_list):
+        print(element)
+        element = element.strip().split(",")
+        if len(element) < 7:
+            print(f"Invalid line at cameras.txt : {element}")
+            continue
+        cameraName = element[0]
+        cameraIP = element[1]
+        threshold = element[2]
+        lat = element[3]
+        longi = element[4]
+        camera_shift_time = int(element[6])
+        prev_time = time.time()
             
-        ''' Output analyzed photos
-        cv2.imwrite(f'monoloco{frame_id}.jpg', image)
-        '''
+        try:
+            print(f"Reading: {cameraIP}")
+            cam = cv2.VideoCapture(cameraIP)
+            # cam = cv2.VideoCapture(args.camera)
 
-        LOG.debug(dic_out)
-        frame_id += 1
+            visualizer_mono = None
+            
+            frame_id = 0
 
-        # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
+            while True:
+                start = time.time()
 
-        end = time.time()
-        LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
+                ret, frame = cam.read()
 
-    cam.release()
+                # if ret and frame is not None:
+                image = cv2.resize(frame, (1920, 1080))
 
-    cv2.destroyAllWindows()
+                # scale = (args.long_edge)/frame.shape[0]
+                # image = cv2.resize(frame, None, fx=scale, fy=scale)
+                height, width, _ = image.shape
+                LOG.debug('resized image size: {}'.format(image.shape))
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                pil_image = Image.fromarray(image)
+
+                data = datasets.PilImageList(
+                    [pil_image], preprocess=predictor.preprocess)
+
+                data_loader = torch.utils.data.DataLoader(
+                    data, batch_size=1, shuffle=False,
+                    pin_memory=False, collate_fn=datasets.collate_images_anns_meta)
+
+                for (_, _, _) in data_loader:
+
+                    for idx, (preds, _, _) in enumerate(predictor.dataset(data)):
+
+                        if idx == 0:
+                            pifpaf_outs = {
+                                'pred': preds,
+                                'left': [ann.json_data() for ann in preds],
+                                'image': image}
+
+                # if not ret:
+                #     break
+                # key = cv2.waitKey(1)
+                # if key % 256 == 27:
+                #     # ESC pressed
+                #     LOG.info("Escape hit, closing...")
+                #     break
+
+                kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
+                boxes, keypoints = preprocess_pifpaf(
+                    pifpaf_outs['left'], (width, height))
+
+
+                dic_out = net.forward(keypoints, kk)
+                dic_out = net.post_process(dic_out, boxes, keypoints, kk)
+
+                if 'social_distance' in args.activities:
+                    dic_out = net.social_distance(dic_out, args)
+                if 'raise_hand' in args.activities:
+                    dic_out = net.raising_hand(dic_out, keypoints)
+                if visualizer_mono is None:  # it is, at the beginning
+                    visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
+                    visualizer_mono.send(None)
+
+                # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
+
+                print(f"Identified {len(dic_out['xyz_pred'])} people")
+                print(f"xyz_pred: {dic_out['xyz_pred']}")
+
+                ################## POST DATA ################## 
+                # '''
+                BASE_URL = 'http://web:8000'
+
+                camera_to_person_xyz = dic_out['xyz_pred']
+        
+                if len(camera_to_person_xyz) > 0:
+                    for id, xyz in enumerate(camera_to_person_xyz):
+                        x = xyz[0]
+                        # y = xyz[1]
+                        z = xyz[2]
+
+                        person_instance_obj = {
+                                    "id": 0,
+                                    "name": f"Person {id+1}",
+                                    "frame_id": frame_id,
+                                    "x": x,
+                                    "z": z
+                        }
+                        url = f"{BASE_URL}/patch_person_instance/"
+                        # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
+                        try:
+                            x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
+                            print(f"POST /patch_person_instance")
+                        except:
+                            print(f"no POST /patch_person_instance")
+                            continue
+                # '''
+                ############################################### 
+                    
+                ''' Output analyzed photos
+                cv2.imwrite(f'monoloco{frame_id}.jpg', image)
+                '''
+
+                LOG.debug(dic_out)
+                frame_id += 1
+
+                # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
+
+                end = time.time()
+                LOG.info("run-time: {:.2f} ms".format((end-start)*1000))
+
+            # cam.release()
+
+            # cv2.destroyAllWindows()
+        except:
+            print("Re-reading camera feed...")
+            continue
 
 
 class Visualizer:
