@@ -144,10 +144,10 @@ def main():
         if args.webcam:
             # from .visuals.webcam import webcam
             # webcam(args)
-            from .visuals.webcam_lauretta import webcam
-            webcam(args)
-            # from .visuals.webcam_fair import webcam
-            # webcam(args, frame)
+            # from .visuals.webcam_lauretta import webcam
+            # webcam(args)
+            from .visuals.webcam_fair import webcam
+            webcam(args, frame)
         else:
             from .predict import predict
             predict(args)

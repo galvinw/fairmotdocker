@@ -128,7 +128,7 @@ def eval_prop():
                 # print(len(predictions))
 
                 ################## POST DATA ################## 
-                # '''
+                '''
                 BASE_URL = 'http://web:8000'
                 
                 url = f"{BASE_URL}/add_zone_status/"
@@ -172,7 +172,7 @@ def eval_prop():
                         except:
                             print(f"no POST /add_person_instance/")
                             continue
-                # '''
+                '''
                 ############################################### 
 
                 frame_id += 1
