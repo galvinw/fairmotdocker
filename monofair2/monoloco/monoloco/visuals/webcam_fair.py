@@ -80,9 +80,9 @@ def webcam(args):
     assert args.mode in 'mono'
     assert cv2
 
-    # print(f"Starting up FairMOT...")
-    # fairmot()
-    # print(f"Completed FairMOT...")
+    print(f"Starting up FairMOT...")
+    fairmot()
+    print(f"Completed FairMOT...")
 
     args, dic_models = factory_from_args(args)
 
