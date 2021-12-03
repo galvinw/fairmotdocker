@@ -220,5 +220,5 @@ def main():
         raise ValueError("Main subparser not recognized or not provided")
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
