@@ -16,15 +16,16 @@ import time
 from datetime import datetime
 import base64
 import requests
-from src.lib.tracker.multitracker import JDETracker
-from src.lib.tracking_utils import visualization as vis
-from src.lib.tracking_utils.log import logger
-from src.lib.tracking_utils.timer import Timer
-from src.lib.tracking_utils.evaluation import Evaluator
+
+from .lib.tracker.multitracker import JDETracker
+from .lib.tracking_utils import visualization as vis
+from .lib.tracking_utils.log import logger
+from .lib.tracking_utils.timer import Timer
+from .lib.tracking_utils.evaluation import Evaluator
 # import datasets.dataset.jde as datasets
 
-from src.lib.tracking_utils.utils import mkdir_if_missing
-from src.lib.opts import options
+from .lib.tracking_utils.utils import mkdir_if_missing
+from .lib.opts import options
 
 from monoloco.monoloco.run import main as monoloco
 

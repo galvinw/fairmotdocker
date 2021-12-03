@@ -27,12 +27,11 @@ from ..visuals import Printer
 from ..network import Loco, preprocess_pifpaf, load_calibration
 from ..predict import download_checkpoints
 
-from ....src.track import eval_prop as fairmot
+from fairmot.src.track import eval_prop as fairmot
 
 LOG = logging.getLogger(__name__)
 
 def factory_from_args(args):
-
     # Model
     dic_models = download_checkpoints(args)
     args.checkpoint = dic_models['keypoints']
@@ -77,7 +76,7 @@ def factory_from_args(args):
     return args, dic_models
 
 def webcam(args):
-
+    print(args)
     assert args.mode in 'mono'
     assert cv2
 
