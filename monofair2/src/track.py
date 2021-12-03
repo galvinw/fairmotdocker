@@ -243,7 +243,7 @@ def eval_prop():
             print("Re-reading camera feed...")
             continue
 
-eval_prop()
+# eval_prop()
 
 
 
