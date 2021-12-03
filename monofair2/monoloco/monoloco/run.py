@@ -137,16 +137,8 @@ def cli():
     return args
 
 
-# def main(frame=False):
 def main():
     args = cli()
-    
-    ''' For integration with FairMOT
-    args.command = 'predict'
-    args.output_types = ['multi']
-    args.webcam = True
-    args.images=['/videos/fastapidemoclip.mp4']
-    '''
     
     if args.command == 'predict':
         if args.webcam:
