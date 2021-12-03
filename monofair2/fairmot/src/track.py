@@ -44,10 +44,9 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
 def eval_prop():
     print(f"Running FairMOT...")
     opt = options().init()
-    opt.task = 'mot'
     f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
-
+    
     f.close()
     tracker = JDETracker(opt, frame_rate=30)
     # predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
