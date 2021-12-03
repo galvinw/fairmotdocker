@@ -27,9 +27,10 @@ from ..visuals import Printer
 from ..network import Loco, preprocess_pifpaf, load_calibration
 from ..predict import download_checkpoints
 
-# FairMOT
+import numpy as np
 from fairmot.src.track import eval_prop as fairmot
 from fairmot.src.lib.opts import options
+from fairmot.src.lib.tracker.multitracker import JDETracker
 
 LOG = logging.getLogger(__name__)
 
@@ -77,28 +78,36 @@ def factory_from_args(args):
 
     return args, dic_models
 
+def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resize a rectangular image to a padded rectangular
+    shape = img.shape[:2]  # shape = [height, width]
+    ratio = min(float(height) / shape[0], float(width) / shape[1])
+    new_shape = (round(shape[1] * ratio), round(shape[0] * ratio))  # new_shape = [width, height]
+    dw = (width - new_shape[0]) / 2  # width padding
+    dh = (height - new_shape[1]) / 2  # height padding
+    top, bottom = round(dh - 0.1), round(dh + 0.1)
+    left, right = round(dw - 0.1), round(dw + 0.1)
+    img = cv2.resize(img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
+    return img, ratio, dw, dh
+
 def webcam(args):
     assert args.mode in 'mono'
     assert cv2
-
-    # print(f"Starting up FairMOT...")
-    # fairmot()
-    # print(f"Completed FairMOT...")
+    
+    # ---- FairMOT init
     opt = options().init()
-    print(f"opt is {opt}")
-
+    tracker = JDETracker(opt, frame_rate=30)
+    # ---- Monoloco init
     args, dic_models = factory_from_args(args)
-
     # Load Models
     net = Loco(model=dic_models[args.mode], mode=args.mode, device=args.device,
                n_dropout=args.n_dropout, p_dropout=args.dropout)
 
     f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
-
     f.close()
 
-    # for openpifpaf predicitons
+    # for openpifpaf predictions
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
     for element in itertools.cycle(camera_list):
@@ -122,18 +131,42 @@ def webcam(args):
 
             visualizer_mono = None
             
+            fairmot_results = []
             frame_id = 0
 
             while True:
                 start = time.time()
 
                 ret, frame = cam.read()
-
-                # if ret and frame is not None:
                 image = cv2.resize(frame, (1920, 1080))
-
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
+
+                ######################### FairMOT ######################### 
+                img, _, _, _ = letterbox(image, height=1088, width=608)
+                img = img[:, :, ::-1].transpose(2, 0, 1)
+                img = np.ascontiguousarray(img, dtype=np.float32)
+                img /= 255.0
+
+                if opt.device == torch.device('cpu'):
+                    blob = torch.from_numpy(img).unsqueeze(0)
+                else:
+                    blob = torch.from_numpy(img).cuda().unsqueeze(0)
+
+                online_targets = tracker.update(blob, image)
+                online_tlwhs = []
+                online_ids = []
+                for t in online_targets:
+                    tlwh = t.tlwh
+                    tid = t.track_id
+                    vertical = tlwh[2] / tlwh[3] > 1.6
+                    if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
+                        online_tlwhs.append(tlwh)
+                        online_ids.append(tid)
+                # timer.toc()
+                fairmot_results.append((frame_id + 1, online_tlwhs, online_ids))
+
+                # Monoloco
                 height, width, _ = image.shape
                 LOG.debug('resized image size: {}'.format(image.shape))
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
