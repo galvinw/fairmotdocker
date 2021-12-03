@@ -27,7 +27,9 @@ from ..visuals import Printer
 from ..network import Loco, preprocess_pifpaf, load_calibration
 from ..predict import download_checkpoints
 
+# FairMOT
 from fairmot.src.track import eval_prop as fairmot
+from fairmot.src.lib.opts import options
 
 LOG = logging.getLogger(__name__)
 
@@ -76,13 +78,14 @@ def factory_from_args(args):
     return args, dic_models
 
 def webcam(args):
-    print(args)
     assert args.mode in 'mono'
     assert cv2
 
-    print(f"Starting up FairMOT...")
-    fairmot()
-    print(f"Completed FairMOT...")
+    # print(f"Starting up FairMOT...")
+    # fairmot()
+    # print(f"Completed FairMOT...")
+    opt = options().init()
+    print(f"opt is {opt}")
 
     args, dic_models = factory_from_args(args)
 
