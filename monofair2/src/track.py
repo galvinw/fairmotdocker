@@ -41,6 +41,7 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
     return img, ratio, dw, dh
 
 def eval_prop():
+    print(f"Running FairMOT...")
     opt = options().init()
     opt.task = 'mot'
     f = open("/config/cameras.txt", "r")
