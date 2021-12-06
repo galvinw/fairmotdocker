@@ -16,6 +16,7 @@ import time
 from datetime import datetime
 import base64
 import requests
+
 from .lib.tracker.multitracker import JDETracker
 from .lib.tracking_utils import visualization as vis
 from .lib.tracking_utils.log import logger
@@ -88,7 +89,7 @@ def eval_prop():
                 ''' activate openpifpaf 
                 predictions, gt_anns, meta = predictor_pifpaf.numpy_image(img0)
                 '''
-
+            
                 # timer.tic()
                 if opt.device == torch.device('cpu'):
                     blob = torch.from_numpy(img).unsqueeze(0)

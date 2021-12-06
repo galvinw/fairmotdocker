@@ -90,6 +90,23 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
     return img, ratio, dw, dh
 
+
+def read_camera_config(camera):
+    print(camera)
+    camera = camera.strip().split(",")
+
+    if len(camera) < 7: return False
+
+    cam_info = {
+        'cameraName': camera[0],
+        'cameraIP': camera[1],
+        'threshold': camera[2],
+        'lat': camera[3],
+        'longi': camera[4],
+        'camera_shift_time': int(camera[6])
+    }
+    return cam_info
+
 def webcam(args):
     assert args.mode in 'mono'
     assert cv2
@@ -110,24 +127,13 @@ def webcam(args):
     # for openpifpaf predictions
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
-    for element in itertools.cycle(camera_list):
-        print(element)
-        element = element.strip().split(",")
-        if len(element) < 7:
-            print(f"Invalid line at cameras.txt : {element}")
-            continue
-        cameraName = element[0]
-        cameraIP = element[1]
-        threshold = element[2]
-        lat = element[3]
-        longi = element[4]
-        camera_shift_time = int(element[6])
-        prev_time = time.time()
-            
+    for camera in itertools.cycle(camera_list):
+        camera = read_camera_config(camera)
+        if not camera: continue
+
         try:
-            print(f"Reading: {cameraIP}")
-            cam = cv2.VideoCapture(cameraIP)
-            # cam = cv2.VideoCapture(args.camera)
+            print(f"Reading: {camera['cameraIP']}")
+            cam = cv2.VideoCapture(camera['cameraIP'])
 
             visualizer_mono = None
             
