@@ -7,13 +7,13 @@ import torch
 import torch.nn as nn
 import os
 
-from src.lib.models.networks.dlav0 import get_pose_net as get_dlav0
-from src.lib.models.networks.pose_dla_dcn import get_pose_net as get_dla_dcn
-from src.lib.models.networks.resnet_dcn import get_pose_net as get_pose_net_dcn
-from src.lib.models.networks.resnet_fpn_dcn import get_pose_net as get_pose_net_fpn_dcn
-from src.lib.models.networks.pose_hrnet import get_pose_net as get_pose_net_hrnet
-from src.lib.models.networks.pose_dla_conv import get_pose_net as get_dla_conv
-from src.lib.models.yolo import get_pose_net as get_pose_net_yolo
+from ...lib.models.networks.dlav0 import get_pose_net as get_dlav0
+from ...lib.models.networks.pose_dla_dcn import get_pose_net as get_dla_dcn
+from ...lib.models.networks.resnet_dcn import get_pose_net as get_pose_net_dcn
+from ...lib.models.networks.resnet_fpn_dcn import get_pose_net as get_pose_net_fpn_dcn
+from ...lib.models.networks.pose_hrnet import get_pose_net as get_pose_net_hrnet
+from ...lib.models.networks.pose_dla_conv import get_pose_net as get_dla_conv
+from ...lib.models.yolo import get_pose_net as get_pose_net_yolo
 
 _model_factory = {
   'dlav0': get_dlav0, # default DLAup

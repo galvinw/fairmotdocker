@@ -147,7 +147,7 @@ def main():
             # from .visuals.webcam_lauretta import webcam
             # webcam(args)
             from .visuals.webcam_fair import webcam
-            webcam(args, frame)
+            webcam(args)
         else:
             from .predict import predict
             predict(args)
