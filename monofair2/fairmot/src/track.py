@@ -26,8 +26,6 @@ from .lib.tracking_utils.evaluation import Evaluator
 from .lib.tracking_utils.utils import mkdir_if_missing
 from .lib.opts import options
 
-from monoloco.monoloco.run import main as monoloco
-
 def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resize a rectangular image to a padded rectangular
     shape = img.shape[:2]  # shape = [height, width]
     ratio = min(float(height) / shape[0], float(width) / shape[1])
@@ -41,14 +39,13 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
     return img, ratio, dw, dh
 
 def eval_prop():
-    print(f"Running FairMOT...")
     opt = options().init()
-    opt.task = 'mot'
     f = open("/config/cameras.txt", "r")
     camera_list = f.readlines()
-
     f.close()
+
     tracker = JDETracker(opt, frame_rate=30)
+    
     # predictor_pifpaf =  Predictor(checkpoint='shufflenetv2k30')
 
     for element in itertools.cycle(camera_list):
@@ -91,8 +88,8 @@ def eval_prop():
                 ''' activate openpifpaf 
                 predictions, gt_anns, meta = predictor_pifpaf.numpy_image(img0)
                 '''
-            
-                timer.tic()
+
+                # timer.tic()
                 if opt.device == torch.device('cpu'):
                     blob = torch.from_numpy(img).unsqueeze(0)
                 else:
@@ -108,7 +105,7 @@ def eval_prop():
                     if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
-                timer.toc()
+                # timer.toc()
                 results.append((frame_id + 1, online_tlwhs, online_ids))
                 
                 ''' Output analyzed photos
@@ -120,14 +117,7 @@ def eval_prop():
                 cv2.imwrite(f'fairmot{frame_id}.jpg', online_im)
                 '''
                 
-                ''' Integration with monoloco
-                dic_out = monoloco(img0)
-                print(f"\n============== FairMOT dic_out : {dic_out}\n")
-                '''
-
-
                 # print(len(predictions))
-
                 ################## POST DATA ################## 
                 '''
                 BASE_URL = 'http://web:8000'
