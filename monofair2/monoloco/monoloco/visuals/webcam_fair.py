@@ -33,6 +33,7 @@ from fairmot.src.lib.opts import options
 from fairmot.src.lib.tracker.multitracker import JDETracker
 
 LOG = logging.getLogger(__name__)
+BASE_URL = 'http://web:8000'
 
 def factory_from_args(args):
     # Model
@@ -89,7 +90,6 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
     img = cv2.resize(img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
     return img, ratio, dw, dh
-
 
 def read_camera_config(camera):
     print(camera)
@@ -148,7 +148,7 @@ def webcam(args):
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
 
-                ######################### FairMOT ######################### 
+                ############# RE-ID (FairMOT) ############# 
                 img, _, _, _ = letterbox(image, height=1088, width=608)
                 img = img[:, :, ::-1].transpose(2, 0, 1)
                 img = np.ascontiguousarray(img, dtype=np.float32)
@@ -172,7 +172,7 @@ def webcam(args):
                 # timer.toc()
                 fairmot_results.append((frame_id + 1, online_tlwhs, online_ids))
 
-                # Monoloco
+                ############# Convert Front View -> Bird View (Monoloco) ############# 
                 height, width, _ = image.shape
                 LOG.debug('resized image size: {}'.format(image.shape))
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -211,48 +211,24 @@ def webcam(args):
                 dic_out = net.forward(keypoints, kk)
                 dic_out = net.post_process(dic_out, boxes, keypoints, kk)
 
-                if 'social_distance' in args.activities:
-                    dic_out = net.social_distance(dic_out, args)
-                if 'raise_hand' in args.activities:
-                    dic_out = net.raising_hand(dic_out, keypoints)
-                if visualizer_mono is None:  # it is, at the beginning
-                    visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
-                    visualizer_mono.send(None)
+                camera_to_person_xyz = dic_out['xyz_pred']
+                
+                post_data(online_ids, camera_to_person_xyz, frame_id)
+
+                # if 'social_distance' in args.activities:
+                #     dic_out = net.social_distance(dic_out, args)
+                # if 'raise_hand' in args.activities:
+                #     dic_out = net.raising_hand(dic_out, keypoints)
+
+                # if visualizer_mono is None:  # it is, at the beginning
+                #     visualizer_mono = Visualizer(kk, args)(pil_image)  # create it with the first image
+                #     visualizer_mono.send(None)
 
                 # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
 
-                print(f"Identified {len(dic_out['xyz_pred'])} people")
+                # print(f"Identified {len(dic_out['xyz_pred'])} people")
                 print(f"xyz_pred: {dic_out['xyz_pred']}")
 
-                ################## POST DATA ################## 
-                '''
-                BASE_URL = 'http://web:8000'
-
-                camera_to_person_xyz = dic_out['xyz_pred']
-        
-                if len(camera_to_person_xyz) > 0:
-                    for id, xyz in enumerate(camera_to_person_xyz):
-                        x = xyz[0]
-                        # y = xyz[1]
-                        z = xyz[2]
-
-                        person_instance_obj = {
-                                    "id": 0,
-                                    "name": f"Person {id+1}",
-                                    "frame_id": frame_id,
-                                    "x": x,
-                                    "z": z
-                        }
-                        url = f"{BASE_URL}/patch_person_instance/"
-                        # url = f"{BASE_URL}/patch_person_instance/{frame_id}/Person {id}"
-                        try:
-                            x = requests.patch(url,json=person_instance_obj,headers={"content-type":"application/json","accept":"application/json"})
-                            print(f"POST /patch_person_instance")
-                        except:
-                            print(f"no POST /patch_person_instance")
-                            continue
-                '''
-                ############################################### 
                     
                 ''' Output analyzed photos
                 cv2.imwrite(f'monoloco{frame_id}.jpg', image)
@@ -273,6 +249,54 @@ def webcam(args):
             print("Re-reading camera feed...")
             continue
 
+def post_data(online_ids, camera_to_person_xyz, frame_id):
+    zone_status_obj = {
+                "zone_id": 1,
+                "number": len(online_ids)
+            }
+    try:
+        x = requests.post(f"{BASE_URL}/add_zone_status/",json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
+        print(f"POST /add_zone_status successfully")
+    except:
+        print(f"no POST /add_zone_status")
+    
+    if len(online_ids) > 0 and len (camera_to_person_xyz) > 0:
+        for idx, id in enumerate(online_ids):
+
+            person_id_obj = {
+                "id": id,
+                "name": f"Person {id}"
+            }
+            try:
+                a = requests.post(f"{BASE_URL}/add_person/",
+                    json=person_id_obj,headers={"content-type":"application/json",
+                    "accept":"application/json"})
+                print(f"POST /add_person/")
+            except:
+                print(f"no POST /add_person/")
+            
+            if not camera_to_person_xyz[idx]:
+                camera_to_person_xyz[idx] = [0,0,0]
+            else:
+                x = camera_to_person_xyz[idx][0]
+                # y = camera_to_person_xyz[idx][1]
+                z = camera_to_person_xyz[idx][2]
+
+            person_instance_obj = {
+                "id": id,
+                "name": f"Person {id}",
+                "frame_id": frame_id,
+                "x": x,
+                "z": z
+            }
+        
+            try:
+                b = requests.post(f"{BASE_URL}/add_person_instance/",
+                    json=person_instance_obj,headers={"content-type":"application/json",
+                    "accept":"application/json"})
+                print(f"POST /add_person_instance/")
+            except:
+                print(f"no POST /add_person_instance/")
 
 class Visualizer:
     def __init__(self, kk, args):
