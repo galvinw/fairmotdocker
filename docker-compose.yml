@@ -60,9 +60,9 @@ services:
       - ./videos:/videos
     # ports:
     #   - "100:100"
-    # depends_on:
-    #   - web
-    #   - db
+    depends_on:
+      - web
+      - db
 
   # fair:
   #   build:
