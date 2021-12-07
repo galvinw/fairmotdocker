@@ -25,6 +25,6 @@ COPY . .
 RUN (cd monoloco ; python3.8 setup.py bdist_wheel)
 RUN (cd monoloco ; pip3.8 install -e .)
 
-RUN python3.8 DCNv2/setup.py install develop
-ENV PYTHONPATH "${PYTHONPATH}:src/lib:DCNv2/src:DCNv2"
+RUN (cd fairmot ; python3.8 DCNv2/setup.py install develop)
+ENV PYTHONPATH "${PYTHONPATH}:fairmot/src/lib:fairmot/DCNv2/src:fairmot/DCNv2"
 
