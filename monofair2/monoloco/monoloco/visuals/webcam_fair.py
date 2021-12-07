@@ -205,7 +205,7 @@ def webcam(args):
 
                 kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
                 boxes, keypoints = preprocess_pifpaf(
-                    pifpaf_outs['left'], (width, height))
+                    pifpaf_outs['left'], (width, height), min_conf=0.1)
 
 
                 dic_out = net.forward(keypoints, kk)
