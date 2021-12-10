@@ -254,7 +254,10 @@ class options(object):
         for k, v in entries.items():
           self.__setattr__(k, v)
     opt = self.parse(args)
+
+    # manual override
     opt.task = 'mot'
+    
     dataset = Struct(default_dataset_info[opt.task])
     print(dataset)
     opt.dataset = dataset.dataset

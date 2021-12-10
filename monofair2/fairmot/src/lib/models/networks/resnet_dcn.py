@@ -15,7 +15,7 @@ import logging
 
 import torch
 import torch.nn as nn
-from dcn_v2 import DCN
+from DCNv2.dcn_v2 import DCN
 import torch.utils.model_zoo as model_zoo
 
 BN_MOMENTUM = 0.1
@@ -146,17 +146,11 @@ class PoseResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
         # used for deconv layers
-        self.deconv_layer1 = self._make_deconv_layer(256, 4)
-        self.deconv_layer2 = self._make_deconv_layer(128, 4)
-        self.deconv_layer3 = self._make_deconv_layer(64, 4)
-
-        self.smooth_layer1 = DeformConv(256, 256)
-        self.smooth_layer2 = DeformConv(128, 128)
-        self.smooth_layer3 = DeformConv(64, 64)
-
-        self.project_layer1 = DeformConv(256 * block.expansion, 256)
-        self.project_layer2 = DeformConv(128 * block.expansion, 128)
-        self.project_layer3 = DeformConv(64 * block.expansion, 64)
+        self.deconv_layers = self._make_deconv_layer(
+            3,
+            [256, 128, 64],
+            [4, 4, 4],
+        )
 
         for head in self.heads:
             classes = self.heads[head]
@@ -199,7 +193,7 @@ class PoseResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def _get_deconv_cfg(self, deconv_kernel):
+    def _get_deconv_cfg(self, deconv_kernel, index):
         if deconv_kernel == 4:
             padding = 1
             output_padding = 0
@@ -212,38 +206,42 @@ class PoseResNet(nn.Module):
 
         return deconv_kernel, padding, output_padding
 
-    def _make_deconv_layer(self, num_filters, num_kernels):
+    def _make_deconv_layer(self, num_layers, num_filters, num_kernels):
+        assert num_layers == len(num_filters), \
+            'ERROR: num_deconv_layers is different len(num_deconv_filters)'
+        assert num_layers == len(num_kernels), \
+            'ERROR: num_deconv_layers is different len(num_deconv_filters)'
 
         layers = []
+        for i in range(num_layers):
+            kernel, padding, output_padding = \
+                self._get_deconv_cfg(num_kernels[i], i)
 
-        kernel, padding, output_padding = \
-            self._get_deconv_cfg(num_kernels)
+            planes = num_filters[i]
+            fc = DCN(self.inplanes, planes, 
+                    kernel_size=(3,3), stride=1,
+                    padding=1, dilation=1, deformable_groups=1)
+            # fc = nn.Conv2d(self.inplanes, planes,
+            #         kernel_size=3, stride=1, 
+            #         padding=1, dilation=1, bias=False)
+            # fill_fc_weights(fc)
+            up = nn.ConvTranspose2d(
+                    in_channels=planes,
+                    out_channels=planes,
+                    kernel_size=kernel,
+                    stride=2,
+                    padding=padding,
+                    output_padding=output_padding,
+                    bias=self.deconv_with_bias)
+            fill_up_weights(up)
 
-        planes = num_filters
-        fc = DCN(self.inplanes, planes,
-                kernel_size=(3,3), stride=1,
-                padding=1, dilation=1, deformable_groups=1)
-        # fc = nn.Conv2d(self.inplanes, planes,
-        #         kernel_size=3, stride=1,
-        #         padding=1, dilation=1, bias=False)
-        # fill_fc_weights(fc)
-        up = nn.ConvTranspose2d(
-                in_channels=planes,
-                out_channels=planes,
-                kernel_size=kernel,
-                stride=2,
-                padding=padding,
-                output_padding=output_padding,
-                bias=self.deconv_with_bias)
-        fill_up_weights(up)
-
-        layers.append(fc)
-        layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
-        layers.append(nn.ReLU(inplace=True))
-        layers.append(up)
-        layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
-        layers.append(nn.ReLU(inplace=True))
-        self.inplanes = planes
+            layers.append(fc)
+            layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
+            layers.append(nn.ReLU(inplace=True))
+            layers.append(up)
+            layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
+            layers.append(nn.ReLU(inplace=True))
+            self.inplanes = planes
 
         return nn.Sequential(*layers)
 
@@ -253,19 +251,15 @@ class PoseResNet(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        c1 = self.layer1(x)
-        c2 = self.layer2(c1)
-        c3 = self.layer3(c2)
-        c4 = self.layer4(c3)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
 
-        p4 = c4
-        p3 = self.smooth_layer1(self.deconv_layer1(p4) + self.project_layer1(c3))
-        p2 = self.smooth_layer2(self.deconv_layer2(p3) + self.project_layer2(c2))
-        p1 = self.smooth_layer3(self.deconv_layer3(p2) + self.project_layer3(c1))
-
+        x = self.deconv_layers(x)
         ret = {}
         for head in self.heads:
-            ret[head] = self.__getattr__(head)(p1)
+            ret[head] = self.__getattr__(head)(x)
         return [ret]
 
     def init_weights(self, num_layers):
@@ -275,25 +269,10 @@ class PoseResNet(nn.Module):
             print('=> loading pretrained model {}'.format(url))
             self.load_state_dict(pretrained_state_dict, strict=False)
             print('=> init deconv weights from normal distribution')
-
-
-class DeformConv(nn.Module):
-    def __init__(self, chi, cho):
-        super(DeformConv, self).__init__()
-        self.actf = nn.Sequential(
-            nn.BatchNorm2d(cho, momentum=BN_MOMENTUM),
-            nn.ReLU(inplace=True)
-        )
-        self.conv = DCN(chi, cho, kernel_size=(3, 3), stride=1, padding=1, dilation=1, deformable_groups=1)
-        for name, m in self.actf.named_modules():
-            if isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.actf(x)
-        return x
+            for name, m in self.deconv_layers.named_modules():
+                if isinstance(m, nn.BatchNorm2d):
+                    nn.init.constant_(m.weight, 1)
+                    nn.init.constant_(m.bias, 0)
 
 
 resnet_spec = {18: (BasicBlock, [2, 2, 2, 2]),

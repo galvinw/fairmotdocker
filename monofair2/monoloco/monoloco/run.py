@@ -21,7 +21,7 @@ def cli():
     predict_parser.add_argument('--glob', help='glob expression for input images (for many images)')
     predict_parser.add_argument('--checkpoint', help='pifpaf model')
     predict_parser.add_argument('-o', '--output-directory', help='Output directory')
-    predict_parser.add_argument('--output_types', nargs='+', default= [],
+    predict_parser.add_argument('--output_types', nargs='+', default= ['multi'],
                                 help='MonoLoco - what to output: json bird front or multi')
     predict_parser.add_argument('--json-output', default=None, nargs='?', const=True,
                                 help='OpenpifPaf - whether to output a json file,'
@@ -137,29 +137,24 @@ def cli():
     return args
 
 
-# def main(frame=False):
 def main():
     args = cli()
     
-    ''' For integration with FairMOT
-    args.command = 'predict'
-    args.output_types = ['multi']
-    args.webcam = True
-    args.images=['/videos/fastapidemoclip.mp4']
-    '''
-    
+    args.command == 'predict'
+    from .visuals.webcam_fair import webcam
+    webcam(args)
+
+    ''' Inactivate unnecessary commands 
     if args.command == 'predict':
         if args.webcam:
             # from .visuals.webcam import webcam
             # webcam(args)
-            from .visuals.webcam_lauretta import webcam
-            webcam(args)
-            # from .visuals.webcam_fair import webcam
-            # webcam(args, frame)
+            # from .visuals.webcam_lauretta import webcam
+            # webcam(args)
         else:
             from .predict import predict
             predict(args)
-
+    
     elif args.command == 'prep':
         if 'nuscenes' in args.dataset:
             from .prep.preprocess_nu import PreprocessNuscenes
@@ -226,7 +221,8 @@ def main():
 
     else:
         raise ValueError("Main subparser not recognized or not provided")
+    '''
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
