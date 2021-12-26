@@ -14,13 +14,17 @@ Additional steps for Windows:
 Using Ubuntu bash terminal, install `nvidia-docker2` packages. 
 ```sh
 # The steps below are taken from https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+
 # Install the nvidia-docker2 package (and dependencies) after updating the package listing:
 $ sudo apt-get update
 $ sudo apt-get install -y nvidia-docker2
-#Restart the Docker daemon to complete the installation after setting the default runtime:
+
+# Restart the Docker daemon to complete the installation after setting the default runtime:
 $ sudo systemctl restart docker
+
 # At this point, a working setup can be tested by running a base CUDA container:
 $ sudo docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+
 # This should result in a console output shown below which indicates that GPU setup is completed:
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 450.51.06    Driver Version: 450.51.06    CUDA Version: 11.0     |
