@@ -49,7 +49,10 @@ def factory_from_args(args):
     args.pin_memory = False
     if torch.cuda.is_available():
         args.device = torch.device('cuda')
+        print("CUDA is activated")
         args.pin_memory = True
+    else:
+        print("CUDA is not detected. CPU is utilized.")
     LOG.debug('neural network device: %s', args.device)
 
     # Add visualization defaults
@@ -154,10 +157,14 @@ def webcam(args):
                 img = np.ascontiguousarray(img, dtype=np.float32)
                 img /= 255.0
 
+                # print(f"opt device is {opt.device}")
+
                 if opt.device == torch.device('cpu'):
                     blob = torch.from_numpy(img).unsqueeze(0)
+                    print("CPU is used")
                 else:
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
+                    print("CUDA is used")
 
                 online_targets = tracker.update(blob, image)
                 online_tlwhs = []
@@ -245,8 +252,9 @@ def webcam(args):
             # cam.release()
 
             # cv2.destroyAllWindows()
-        except:
+        except Exception as e:
             print("Re-reading camera feed...")
+            print(e)
             continue
 
 def post_data(online_ids, camera_to_person_xyz, frame_id):

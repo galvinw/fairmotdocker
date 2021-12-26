@@ -175,12 +175,21 @@ class STrack(BaseTrack):
 class JDETracker(object):
     def __init__(self, opt, frame_rate=30):
         self.opt = opt
+
         if opt.gpus[0] >= 0:
             opt.device = torch.device('cuda')
             print('Cude')
         else:
             opt.device = torch.device('cpu')
             print('CPU')
+
+        # try:
+        #     opt.device = torch.device('cuda')   
+        #     print('Cude')
+        # except:
+        #     opt.device = torch.device('cpu')
+        #     print('CPU')
+        
         print('Creating model...')
         self.model = create_model(opt.arch, opt.heads, opt.head_conv)
         self.model = load_model(self.model, opt.load_model)
