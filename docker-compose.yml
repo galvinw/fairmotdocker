@@ -53,7 +53,9 @@ services:
     build:
       context: ./monofair2
     # 'predict' is needed only to activate default argparser, it could be any string
-    command: bash -c 'python3.8 main.py predict'
+    # command: bash -c 'python3.8 main.py predict'
+    # Encountered issue of cuda could not been recognized during image built. Hence, had to build it at runtime
+    command: bash -c 'cd fairmot ; python3.8 DCNv2/setup.py install develop --user ; cd .. ; python3.8 main.py predict'
     runtime: nvidia
     volumes:
       - ./monofair2:/lauretta
@@ -61,6 +63,11 @@ services:
       - ./videos:/videos
     # ports:
     #   - "100:100"
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
     depends_on:
       - web
       - db
