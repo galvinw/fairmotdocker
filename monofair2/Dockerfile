@@ -1,5 +1,5 @@
 # Dockerfile.monofair2
-FROM nvidia/cuda:11.3.0-runtime-ubuntu20.04
+FROM nvidia/cuda:11.3.0-cudnn8-devel-ubuntu20.04
 
 RUN apt update && \
     DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install tzdata && \
@@ -36,5 +36,9 @@ RUN (cd monoloco ; python3.8 setup.py bdist_wheel)
 RUN (cd monoloco ; pip3.8 install -e .)
 
 ENV PYTHONPATH "${PYTHONPATH}:$PWD/fairmot/src/lib:$PWD/fairmot/DCNv2/src:$PWD/fairmot/DCNv2:build/bdist.linux-x86_64/egg"
-RUN (cd fairmot ; python3.8 DCNv2/setup.py install develop --user)
+# ENV NVIDIA_VISIBLE_DEVICES all
+# ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+# RUN python3.8 collect_env.py
+# RUN nvidia-smi
+# RUN (cd fairmot ; python3.8 DCNv2/setup.py install develop --user)
 

@@ -21,6 +21,7 @@ from ...lib.utils.post_process import ctdet_post_process
 from ...lib.utils.image import get_affine_transform
 from ...lib.models.utils import _tranpose_and_gather_feat
 
+from torch.utils.cpp_extension import CUDA_HOME
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
@@ -176,20 +177,20 @@ class JDETracker(object):
     def __init__(self, opt, frame_rate=30):
         self.opt = opt
 
-        if opt.gpus[0] >= 0:
-            opt.device = torch.device('cuda')
-            print('Cude')
-        else:
+        # if opt.gpus[0] >= 0:
+        #     opt.device = torch.device('cuda')
+        #     print('Cuda')
+        # else:
+        #     opt.device = torch.device('cpu')
+        #     print('CPU')
+
+        try:
+            opt.device = torch.device('cuda')   
+            print('Cuda')
+        except:
             opt.device = torch.device('cpu')
             print('CPU')
 
-        # try:
-        #     opt.device = torch.device('cuda')   
-        #     print('Cude')
-        # except:
-        #     opt.device = torch.device('cpu')
-        #     print('CPU')
-        
         print('Creating model...')
         self.model = create_model(opt.arch, opt.heads, opt.head_conv)
         self.model = load_model(self.model, opt.load_model)
@@ -252,6 +253,16 @@ class JDETracker(object):
         meta = {'c': c, 's': s,
                 'out_height': inp_height // self.opt.down_ratio,
                 'out_width': inp_width // self.opt.down_ratio}
+
+        # CUDA Availability Test
+        print("CUDA TEST START")
+        print(torch.cuda.is_available())        # Expected output: True
+        print(torch.cuda.current_device())      # Expected output: 0
+        print(torch.cuda.device(0))             # Expected output: <torch.cuda.device object at 0x7f1df548fe20>
+        print(torch.cuda.device_count())        # Expected output: 1
+        print(torch.cuda.get_device_name(0))    # Expected output: NVIDIA GeForce RTX 2070 SUPER
+        print(CUDA_HOME)                        # Expected output: /usr/local/cuda
+        print("CUDA TEST END")
 
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():

@@ -1,24 +1,26 @@
 #include <vector>
-#include "dcn_v2_im2col_cuda.h"
+#include "cpu/dcn_v2_im2col_cpu.h"
+#include <iostream>
 
 #include <ATen/ATen.h>
-#include <ATen/cuda/CUDAContext.h>
+//#include <ATen/cuda/CUDAContext.h>
 
-#include <THC/THC.h>
-#include <THC/THCAtomics.cuh>
-#include <THC/THCDeviceUtils.cuh>
+#include <TH/TH.h>
+//#include <THC/THCAtomics.cuh>
+//#include <THC/THCDeviceUtils.cuh>
 
-THCState *state = at::globalContext().lazyInitCUDA();
+//extern THCState *state;
 
 // author: Charles Shang
 // https://github.com/torch/cunn/blob/master/lib/THCUNN/generic/SpatialConvolutionMM.cu
 
-// [batch gemm]
-// https://github.com/pytorch/pytorch/blob/master/aten/src/THC/generic/THCTensorMathBlas.cu
+// modified from the CUDA version for CPU use by Daniel K. Suhendro
 
+// edit by: James Bockman and Matthew Howe
+// modified for torch implementation to remove use of deprecated torch access to Blas
 
 at::Tensor
-dcn_v2_cuda_forward(const at::Tensor &input,
+dcn_v2_cpu_forward(const at::Tensor &input,
                     const at::Tensor &weight,
                     const at::Tensor &bias,
                     const at::Tensor &offset,
@@ -33,13 +35,12 @@ dcn_v2_cuda_forward(const at::Tensor &input,
                     const int dilation_w,
                     const int deformable_group)
 {
-    using scalar_t = float;
     // THCAssertSameGPU(THCudaTensor_checkGPU(state, 5, input, weight, bias, offset, mask));
-    AT_ASSERTM(input.is_cuda(), "input must be a CUDA tensor");
-    AT_ASSERTM(weight.is_cuda(), "weight must be a CUDA tensor");
-    AT_ASSERTM(bias.is_cuda(), "bias must be a CUDA tensor");
-    AT_ASSERTM(offset.is_cuda(), "offset must be a CUDA tensor");
-    AT_ASSERTM(mask.is_cuda(), "mask must be a CUDA tensor");
+    /*AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
+    AT_ASSERTM(weight.type().is_cuda(), "weight must be a CUDA tensor");
+    AT_ASSERTM(bias.type().is_cuda(), "bias must be a CUDA tensor");
+    AT_ASSERTM(offset.type().is_cuda(), "offset must be a CUDA tensor");
+    AT_ASSERTM(mask.type().is_cuda(), "mask must be a CUDA tensor");*/
 
     const int batch = input.size(0);
     const int channels = input.size(1);
@@ -64,37 +65,52 @@ dcn_v2_cuda_forward(const at::Tensor &input,
     const int height_out = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
     const int width_out = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
 
-    auto ones = at::ones({batch, bias.sizes()[0], height_out, width_out}, input.options());
-    auto columns = at::empty({batch, channels * kernel_h * kernel_w, 1 * height_out * width_out}, input.options());
+    // auto ones = at::ones({height_out, width_out}, input.options());
+    auto ones = at::ones({bias.sizes()[0], height_out, width_out}, input.options());
+    auto columns = at::empty({channels * kernel_h * kernel_w, 1 * height_out * width_out}, input.options());
     auto output = at::zeros({batch, channels_out, height_out, width_out}, input.options());
 
-    // Add biases to output tensor
-    // torch implementation
-    auto ones_T = at::transpose(ones.contiguous(), 3, 1);
-    ones_T = at::mul(ones_T, bias.contiguous());
-    ones_T = at::transpose(ones_T, 3, 1);
-    output = at::add(output, ones_T);
+    using scalar_t = float;
+    for (int b = 0; b < batch; b++)
+    {
+        auto input_n = input.select(0, b);
+        auto offset_n = offset.select(0, b);
+        auto mask_n = mask.select(0, b);
+        auto output_n = output.select(0, b);
+        // std::cout << "output_n: " << output_n << "output.select(0,b): " << output.select(0,b) << "\n"; 
 
-    modulated_deformable_im2col_cuda(c10::cuda::getCurrentCUDAStream(),
-                                 input.data_ptr<scalar_t>(),
-                                 offset.data_ptr<scalar_t>(),
-                                 mask.data_ptr<scalar_t>(),
-                                 batch, channels, height, width,
-                                 height_out, width_out, kernel_h, kernel_w,
-                                 pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
-                                 deformable_group,
-                                 columns.data_ptr<scalar_t>());
+        // Do Bias first:
+        // M,N,K are dims of matrix A and B
+        // (see http://docs.nvidia.com/cuda/cublas/#cublas-lt-t-gt-gemm)
+        // (N x 1) (1 x M)
 
-    // Scale columns and add to output
-    // torch implementation
-    auto weight_flat = weight.view({channels_out, channels * kernel_h * kernel_w});
-    auto product = at::matmul(weight_flat, columns);
-    output = at::add(output, product.view({batch, channels_out, height_out, width_out}));
+        // torch implementation
+        auto ones_T = at::transpose(ones.contiguous(), 2, 0);
+        ones_T = at::mul(ones_T, bias.contiguous());
+        ones_T = at::transpose(ones_T, 2, 0);
+        output_n = at::add(output_n, ones_T);
 
+        modulated_deformable_im2col_cpu(input_n.data_ptr<scalar_t>(),
+                                         offset_n.data_ptr<scalar_t>(),
+                                         mask_n.data_ptr<scalar_t>(),
+                                         1, channels, height, width,
+                                         height_out, width_out, kernel_h, kernel_w,
+                                         pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w,
+                                         deformable_group,
+                                         columns.data_ptr<scalar_t>());
+
+        //(k * m)  x  (m * n)
+        // Y = WC
+
+        // torch implementation
+        auto weight_flat = weight.view({channels_out, channels * kernel_h * kernel_w});
+        auto product = at::matmul(weight_flat, columns);
+        output.select(0, b) = at::add(output_n, product.view({channels_out, height_out, width_out}));
+    }
     return output;
 }
 
-std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
+std::vector<at::Tensor> dcn_v2_cpu_backward(const at::Tensor &input,
                                              const at::Tensor &weight,
                                              const at::Tensor &bias,
                                              const at::Tensor &offset,
@@ -110,11 +126,11 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
     THArgCheck(input.is_contiguous(), 1, "input tensor has to be contiguous");
     THArgCheck(weight.is_contiguous(), 2, "weight tensor has to be contiguous");
 
-    AT_ASSERTM(input.is_cuda(), "input must be a CUDA tensor");
-    AT_ASSERTM(weight.is_cuda(), "weight must be a CUDA tensor");
-    AT_ASSERTM(bias.is_cuda(), "bias must be a CUDA tensor");
-    AT_ASSERTM(offset.is_cuda(), "offset must be a CUDA tensor");
-    AT_ASSERTM(mask.is_cuda(), "mask must be a CUDA tensor");
+    /*AT_ASSERTM(input.type().is_cuda(), "input must be a CUDA tensor");
+    AT_ASSERTM(weight.type().is_cuda(), "weight must be a CUDA tensor");
+    AT_ASSERTM(bias.type().is_cuda(), "bias must be a CUDA tensor");
+    AT_ASSERTM(offset.type().is_cuda(), "offset must be a CUDA tensor");
+    AT_ASSERTM(mask.type().is_cuda(), "mask must be a CUDA tensor");*/
 
     const int batch = input.size(0);
     const int channels = input.size(1);
@@ -136,7 +152,7 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
     const int width_out = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
 
     auto ones = at::ones({height_out, width_out}, input.options());
-    auto columns = at::empty({channels * kernel_h * kernel_w, 1 * height_out * width_out}, input.options());
+    auto columns = at::zeros({channels * kernel_h * kernel_w, 1 * height_out * width_out}, input.options());
     auto output = at::empty({batch, channels_out, height_out, width_out}, input.options());
 
     auto grad_input = at::zeros_like(input);
@@ -157,16 +173,16 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
         auto grad_offset_n = grad_offset.select(0, b);
         auto grad_mask_n = grad_mask.select(0, b);
 
+
+
         // Torch implementation
         auto weight_flat = weight.view({channels_out, channels*kernel_h*kernel_w});
         weight_flat = at::transpose(weight_flat, 1, 0);
-
         auto grad_output_n_flat = grad_output_n.view({channels_out, height_out*width_out});
         columns = at::matmul(weight_flat, grad_output_n_flat);
 
         // gradient w.r.t. input coordinate data
-        modulated_deformable_col2im_coord_cuda(c10::cuda::getCurrentCUDAStream(),
-                                               columns.data_ptr<scalar_t>(),
+        modulated_deformable_col2im_coord_cpu(columns.data_ptr<scalar_t>(),
                                                input_n.data_ptr<scalar_t>(),
                                                offset_n.data_ptr<scalar_t>(),
                                                mask_n.data_ptr<scalar_t>(),
@@ -177,8 +193,7 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
                                                grad_offset_n.data_ptr<scalar_t>(),
                                                grad_mask_n.data_ptr<scalar_t>());
         // gradient w.r.t. input data
-        modulated_deformable_col2im_cuda(c10::cuda::getCurrentCUDAStream(),
-                                         columns.data_ptr<scalar_t>(),
+        modulated_deformable_col2im_cpu(columns.data_ptr<scalar_t>(),
                                          offset_n.data_ptr<scalar_t>(),
                                          mask_n.data_ptr<scalar_t>(),
                                          1, channels, height, width,
@@ -188,8 +203,7 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
                                          grad_input_n.data_ptr<scalar_t>());
 
         // gradient w.r.t. weight, dWeight should accumulate across the batch and group
-        modulated_deformable_im2col_cuda(c10::cuda::getCurrentCUDAStream(),
-                                         input_n.data_ptr<scalar_t>(),
+        modulated_deformable_im2col_cpu(input_n.data_ptr<scalar_t>(),
                                          offset_n.data_ptr<scalar_t>(),
                                          mask_n.data_ptr<scalar_t>(),
                                          1, channels, height, width,
@@ -198,16 +212,15 @@ std::vector<at::Tensor> dcn_v2_cuda_backward(const at::Tensor &input,
                                          dilation_h, dilation_w, deformable_group,
                                          columns.data_ptr<scalar_t>());
 
-
-       // Torch implementation
+        // Torch implementation
         auto product = at::matmul(grad_output_n_flat, at::transpose(columns, 1, 0));
         grad_weight = at::add(grad_weight, product.view({channels_out, channels, kernel_h, kernel_w}));
+
 
         // Torch implementation
         auto ones_flat = ones.view({height_out*width_out});
         product = at::matmul(grad_output_n_flat, ones_flat);
         grad_bias = at::add(grad_bias, product);
-
     }
 
     return {

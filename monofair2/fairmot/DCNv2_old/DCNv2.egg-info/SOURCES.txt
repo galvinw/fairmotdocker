@@ -1,0 +1,15 @@
+LICENSE
+README.md
+setup.py
+/Users/galvinwidjaja/code/fastapi-extended/DCNv2/src/vision.cpp
+/Users/galvinwidjaja/code/fastapi-extended/DCNv2/src/cpu/dcn_v2_cpu.cpp
+/Users/galvinwidjaja/code/fastapi-extended/DCNv2/src/cpu/dcn_v2_im2col_cpu.cpp
+/Users/galvinwidjaja/code/fastapi-extended/DCNv2/src/cpu/dcn_v2_psroi_pooling_cpu.cpp
+DCNv2.egg-info/Icon
+DCNv2.egg-info/PKG-INFO
+DCNv2.egg-info/SOURCES.txt
+DCNv2.egg-info/dependency_links.txt
+DCNv2.egg-info/top_level.txt
+test/test.py
+test/testcpu.py
+test/testcuda.py

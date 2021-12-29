@@ -157,7 +157,7 @@ def webcam(args):
                 img = np.ascontiguousarray(img, dtype=np.float32)
                 img /= 255.0
 
-                # print(f"opt device is {opt.device}")
+                print(f"opt device is {opt.device}")
 
                 if opt.device == torch.device('cpu'):
                     blob = torch.from_numpy(img).unsqueeze(0)
