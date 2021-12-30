@@ -63,11 +63,11 @@ services:
       - ./videos:/videos
     # ports:
     #   - "100:100"
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
     depends_on:
       - web
       - db
