@@ -61,8 +61,14 @@ services:
       - ./monofair2:/lauretta
       - ./config:/config
       - ./videos:/videos
+      # - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    # network_mode: host
     # ports:
     #   - "100:100"
+    env_file:
+      - .env
     deploy:
       resources:
         reservations:

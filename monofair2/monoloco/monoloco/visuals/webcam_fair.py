@@ -8,6 +8,7 @@ Implementation adapted from https://github.com/vita-epfl/openpifpaf/blob/master/
 
 import time
 import logging
+import os
 
 import torch
 import matplotlib.pyplot as plt
@@ -31,6 +32,8 @@ import numpy as np
 from fairmot.src.track import eval_prop as fairmot
 from fairmot.src.lib.opts import options
 from fairmot.src.lib.tracker.multitracker import JDETracker
+from fairmot.src.lib.tracking_utils import visualization as vis
+from fairmot.src.lib.tracking_utils.timer import Timer
 
 LOG = logging.getLogger(__name__)
 BASE_URL = 'http://web:8000'
@@ -143,6 +146,8 @@ def webcam(args):
             fairmot_results = []
             frame_id = 0
 
+            timer = Timer()
+
             while True:
                 start = time.time()
 
@@ -176,8 +181,12 @@ def webcam(args):
                     if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
-                # timer.toc()
+                timer.toc()
                 fairmot_results.append((frame_id + 1, online_tlwhs, online_ids))
+                # ''' Output analyzed photos
+                online_im = vis.plot_tracking(image, online_tlwhs, online_ids, frame_id=frame_id,
+                                                fps=1. / timer.average_time)
+                # '''
 
                 ############# Convert Front View -> Bird View (Monoloco) ############# 
                 height, width, _ = image.shape
@@ -237,9 +246,22 @@ def webcam(args):
                 print(f"xyz_pred: {dic_out['xyz_pred']}")
 
                     
-                ''' Output analyzed photos
-                cv2.imwrite(f'monoloco{frame_id}.jpg', image)
-                '''
+                # ''' Output analyzed photos
+                try:
+                    path = 'output'
+                    cv2.imwrite(os.path.join(path ,f'output_{frame_id}.jpg'), online_im)
+                except:
+                    print(f"Unable to write output for 'output_{frame_id}.jpg'")
+
+                try:
+                    cv2.imshow('online_im', online_im)
+                    cv2.waitKey(1)
+                except:
+                    print(f"imshow could not work")
+
+                # '''
+
+                # cv2.imwrite(f'monoloco{frame_id}.jpg', image)
 
                 LOG.debug(dic_out)
                 frame_id += 1
