@@ -169,9 +169,13 @@ def webcam(args):
     # for openpifpaf predictions
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
+    frame_id = 0
     for camera in itertools.cycle(camera_list):
         camera = read_camera_config(camera)
         if not camera: continue
+
+        loop_id = 0
+
 
         try:
             print(f"Reading: {camera['cameraIP']}")
@@ -318,6 +322,7 @@ def webcam(args):
         except Exception as e:
             print("Re-reading camera feed...")
             print(e)
+            loop_id += 1
             continue
 
 def post_data(online_ids, camera_to_person_xyz, frame_id):
