@@ -263,6 +263,7 @@ def webcam(args):
                 boxes, keypoints = preprocess_pifpaf(
                     pifpaf_outs['left'], (width, height), min_conf=0.1)
 
+                    pifpaf_outs['left'], (width, height), min_conf=0.3)
 
                 dic_out = net.forward(keypoints, kk)
                 dic_out = net.post_process(dic_out, boxes, keypoints, kk)
