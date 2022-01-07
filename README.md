@@ -62,6 +62,21 @@ $ docker-compose build
 $ docker-compose up
 ```
 
+(Optional) To view analyzed videos in GUI, run the following command at project directory
+```sh
+xhost +local:
+```
+Ensure that the following code is uncommented
+```sh
+# docker-compose.yml
+
+monofair2:
+...
+
+    volumes:
+        - /tmp/.X11-unix:/tmp/.X11-unix
+```
+
 ### Testing the APIs
 
 It will run on 

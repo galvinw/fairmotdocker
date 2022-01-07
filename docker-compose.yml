@@ -56,18 +56,24 @@ services:
     # command: bash -c 'python3.8 main.py predict'
     # Encountered issue of cuda could not been recognized during image built. Hence, had to build it at runtime
     command: bash -c 'cd fairmot ; python3.8 DCNv2/setup.py install develop --user ; cd .. ; python3.8 main.py predict'
-    runtime: nvidia
+    # runtime: nvidia
     volumes:
       - ./monofair2:/lauretta
       - ./config:/config
       - ./videos:/videos
+      # - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # - /tmp/.X11-unix:/tmp/.X11-unix:ro
+    # network_mode: host
     # ports:
     #   - "100:100"
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
+    env_file:
+      - .env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
     depends_on:
       - web
       - db
