@@ -155,6 +155,10 @@ def webcam(args):
                 image = cv2.resize(frame, (1920, 1080))
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
+                # skip_frame = 5
+                # if frame_id % skip_frame != 0:
+                #     frame_id += 1
+                #     continue
 
                 ############# RE-ID (FairMOT) ############# 
                 img, _, _, _ = letterbox(image, height=1088, width=608)
