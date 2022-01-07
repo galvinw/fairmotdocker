@@ -113,6 +113,42 @@ def read_camera_config(camera):
     }
     return cam_info
 
+def tlwh_to_tlbr(tlwh):
+    ''' 
+    A function to convert a bounding box coordinates with tlwh (FairMOT) format to tlbr (monoloco)
+    tlwh = top left width height, tlbr = top left bottom right
+    '''
+    tl_x = tlwh[0]              # x coordinate of top left of bounding box
+    tl_y = tlwh[1]              # y coordinate of top left of bounding box
+    width = tlwh[2]
+    height = tlwh[3]
+
+    tlbr = [0,0,0,0]
+    tlbr[0] = tl_x              # x coordinate of top left of bounding box
+    tlbr[1] = tl_y              # y coordinate of top left of bounding box
+    tlbr[2] = tl_x + width      # x coordinate of bottom right of bounding box
+    tlbr[3] = tl_y + height     # y coordinate of bottom right of bounding box
+
+    return tlbr
+
+def tlbr_to_tlwh(tlbr):
+    ''' 
+    A function to convert a bounding box coordinates with tlbr (monoloco) format to tlwh (FairMOT)
+    tlwh = top left width height, tlbr = top left bottom right
+    '''
+    tl_x = tlbr[0]              # x coordinate of top left of bounding box
+    tl_y = tlbr[1]              # y coordinate of top left of bounding box
+    br_x = tlbr[2]
+    br_y = tlbr[3]
+
+    tlwh = [0,0,0,0]
+    tlwh[0] = tl_x              # x coordinate of top left of bounding box
+    tlwh[1] = tl_y              # y coordinate of top left of bounding box
+    tlwh[2] = br_x - tl_x       # x coordinate of bottom right of bounding box
+    tlwh[3] = br_y - tl_y       # y coordinate of bottom right of bounding box
+
+    return tlwh
+
 def webcam(args):
     assert args.mode in 'mono'
     assert cv2
