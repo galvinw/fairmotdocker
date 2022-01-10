@@ -27,6 +27,7 @@ from openpifpaf import datasets
 from ..visuals import Printer
 from ..network import Loco, preprocess_pifpaf, load_calibration
 from ..predict import download_checkpoints
+from ..utils.iou import calculate_iou
 
 import numpy as np
 from fairmot.src.track import eval_prop as fairmot
@@ -149,6 +150,54 @@ def tlbr_to_tlwh(tlbr):
 
     return tlwh
 
+def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptable_iou=0.30):
+    ''' A function that combines FairMOT RE-ID data and Monoloco xyz values (distance from camera to person) '''
+
+    monofair_dic_out = {
+        "total_person": 0,
+        "active_person_ids": [],
+        "bboxes_tlwh": [],
+        "bboxes_tlbr": [],
+        "ious": [],
+        "xyz_preds": [],
+    }
+    
+    for fair_id, fair_tlwh in enumerate(online_tlwhs):
+        fair_tlbr = tlwh_to_tlbr(fair_tlwh)
+        ious = []
+        for mono_id, mono_tlbr in enumerate(dic_out["boxes"]):
+            # Future optimization: If x coordinate of mono_tlbr does not lie within x coordinate of fair_tlbr, skip straight away
+            iou = calculate_iou(fair_tlbr, mono_tlbr[0:4])
+            ious.append(iou)
+
+        highest_iou = max(ious)
+
+        monofair_dic_out["total_person"] += 1
+        monofair_dic_out["active_person_ids"].append(online_ids[fair_id])
+        
+        if highest_iou > acceptable_iou:
+            idx = ious.index(highest_iou)
+
+            x1 = min(fair_tlbr[0], dic_out["boxes"][idx][0])
+            y1 = min(fair_tlbr[1], dic_out["boxes"][idx][1])
+            x2 = max(fair_tlbr[2], dic_out["boxes"][idx][2])
+            y2 = max(fair_tlbr[3], dic_out["boxes"][idx][3])
+            monofair_tlbr = [x1, y1, x2, y2]
+
+            monofair_dic_out["bboxes_tlwh"].append(tlbr_to_tlwh(monofair_tlbr))
+            monofair_dic_out["bboxes_tlbr"].append(monofair_tlbr)
+            monofair_dic_out["ious"].append(highest_iou)
+            monofair_dic_out["xyz_preds"].append(dic_out["xyz_pred"][idx])
+        else:
+            monofair_dic_out["bboxes_tlwh"].append(fair_tlwh)
+            monofair_dic_out["bboxes_tlbr"].append(fair_tlbr)
+            # Negative iou and xyz_pred indicate that FairMOT is able to track the person but monoloco can't
+            monofair_dic_out["ious"].append(-1)
+            monofair_dic_out["xyz_preds"].append([-100,-100,-100])
+
+    return monofair_dic_out
+
+
 def webcam(args):
     assert args.mode in 'mono'
     assert cv2
@@ -183,8 +232,7 @@ def webcam(args):
 
             visualizer_mono = None
             
-            fairmot_results = []
-            frame_id = 0
+            # fairmot_results = []
 
             timer = Timer()
 
@@ -195,6 +243,7 @@ def webcam(args):
                 image = cv2.resize(frame, (1920, 1080))
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
+            
                 # skip_frame = 5
                 # if frame_id % skip_frame != 0:
                 #     frame_id += 1
@@ -222,18 +271,22 @@ def webcam(args):
                     tlwh = t.tlwh
                     tid = t.track_id
                     vertical = tlwh[2] / tlwh[3] > 1.6
+
                     if tlwh[2] * tlwh[3] > opt.min_box_area and not vertical:
                         online_tlwhs.append(tlwh)
                         online_ids.append(tid)
+
                 timer.toc()
-                fairmot_results.append((frame_id + 1, online_tlwhs, online_ids))
-                # ''' Output analyzed photos
+                # fairmot_results.append((frame_id + 1, online_tlwhs, online_ids))
+
+                ''' Output FairMOT analyzed photos
                 online_im = vis.plot_tracking(image, online_tlwhs, online_ids, frame_id=frame_id,
                                                 fps=1. / timer.average_time)
-                # '''
+                '''
 
                 ############# Convert Front View -> Bird View (Monoloco) ############# 
                 height, width, _ = image.shape
+
                 LOG.debug('resized image size: {}'.format(image.shape))
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
                 pil_image = Image.fromarray(image)
@@ -265,16 +318,21 @@ def webcam(args):
 
                 kk = load_calibration(args.calibration, pil_image.size, focal_length=args.focal_length)
                 boxes, keypoints = preprocess_pifpaf(
-                    pifpaf_outs['left'], (width, height), min_conf=0.1)
-
                     pifpaf_outs['left'], (width, height), min_conf=0.3)
 
                 dic_out = net.forward(keypoints, kk)
                 dic_out = net.post_process(dic_out, boxes, keypoints, kk)
 
-                camera_to_person_xyz = dic_out['xyz_pred']
+                ############# Combine FairMOT and Monoloco based on IOU #############
+                monofair_dic_out = merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptable_iou=0.30)
                 
-                post_data(online_ids, camera_to_person_xyz, frame_id)
+                # ''' Output monofair analyzed photos
+                online_im = vis.plot_tracking(image, monofair_dic_out["bboxes_tlwh"], monofair_dic_out["active_person_ids"], frame_id=frame_id,
+                                fps=1. / timer.average_time)
+                # '''
+                print(f'monofair_dic_out : {monofair_dic_out}')
+                
+                post_data(monofair_dic_out, frame_id)
 
                 # if 'social_distance' in args.activities:
                 #     dic_out = net.social_distance(dic_out, args)
@@ -288,13 +346,13 @@ def webcam(args):
                 # print(f"\n============== dic_out : {dic_out['xyz_pred']}\n")
 
                 # print(f"Identified {len(dic_out['xyz_pred'])} people")
-                print(f"xyz_pred: {dic_out['xyz_pred']}")
+                # print(f"xyz_pred: {dic_out['xyz_pred']}")
 
                     
                 # ''' Output analyzed photos
                 try:
                     path = 'output'
-                    cv2.imwrite(os.path.join(path ,f'output_{frame_id}.jpg'), online_im)
+                    cv2.imwrite(os.path.join(path ,f'output_{frame_id}_{loop_id}.jpg'), online_im)
                 except:
                     print(f"Unable to write output for 'output_{frame_id}.jpg'")
 
@@ -304,9 +362,9 @@ def webcam(args):
                 except:
                     print(f"imshow could not work")
 
+                # cv2.imwrite(f'monoloco{frame_id}.jpg', image)
                 # '''
 
-                # cv2.imwrite(f'monoloco{frame_id}.jpg', image)
 
                 LOG.debug(dic_out)
                 frame_id += 1
@@ -325,38 +383,40 @@ def webcam(args):
             loop_id += 1
             continue
 
-def post_data(online_ids, camera_to_person_xyz, frame_id):
+def post_data(monofair_dic_out, frame_id):
+    total_person = monofair_dic_out["total_person"]
+    active_person_ids = monofair_dic_out["active_person_ids"]
+    xyz_preds = monofair_dic_out["xyz_preds"]
+
     zone_status_obj = {
                 "zone_id": 1,
-                "number": len(online_ids)
+                "number": total_person
             }
     try:
-        x = requests.post(f"{BASE_URL}/add_zone_status/",json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
+        post_zone = requests.post(f"{BASE_URL}/add_zone_status/",json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
         print(f"POST /add_zone_status successfully")
     except:
         print(f"no POST /add_zone_status")
     
-    if len(online_ids) > 0 and len (camera_to_person_xyz) > 0:
-        for idx, id in enumerate(online_ids):
+    if total_person > 0 and len(xyz_preds) > 0:
+        for idx, id in enumerate(active_person_ids):
 
             person_id_obj = {
                 "id": id,
                 "name": f"Person {id}"
             }
             try:
-                a = requests.post(f"{BASE_URL}/add_person/",
+                post_person = requests.post(f"{BASE_URL}/add_person/",
                     json=person_id_obj,headers={"content-type":"application/json",
                     "accept":"application/json"})
                 print(f"POST /add_person/")
             except:
                 print(f"no POST /add_person/")
             
-            if not camera_to_person_xyz[idx]:
-                camera_to_person_xyz[idx] = [0,0,0]
-            else:
-                x = camera_to_person_xyz[idx][0]
-                # y = camera_to_person_xyz[idx][1]
-                z = camera_to_person_xyz[idx][2]
+
+            x = xyz_preds[idx][0]
+            # y = xyz_preds[idx][1]
+            z = xyz_preds[idx][2]
 
             person_instance_obj = {
                 "id": id,
@@ -367,7 +427,7 @@ def post_data(online_ids, camera_to_person_xyz, frame_id):
             }
         
             try:
-                b = requests.post(f"{BASE_URL}/add_person_instance/",
+                post_instance = requests.post(f"{BASE_URL}/add_person_instance/",
                     json=person_instance_obj,headers={"content-type":"application/json",
                     "accept":"application/json"})
                 print(f"POST /add_person_instance/")
