@@ -1,9 +1,0 @@
-openpifpaf
-tabulate
-
-[prep]
-nuscenes-devkit
-
-[test]
-pylint
-pytest
