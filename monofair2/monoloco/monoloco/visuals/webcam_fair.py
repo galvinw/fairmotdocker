@@ -327,6 +327,7 @@ def webcam(args):
                 monofair_dic_out = merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptable_iou=0.30)
                 
                 # ''' Output monofair analyzed photos
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 online_im = vis.plot_tracking(image, monofair_dic_out["bboxes_tlwh"], monofair_dic_out["active_person_ids"], frame_id=frame_id,
                                 fps=1. / timer.average_time)
                 # '''
