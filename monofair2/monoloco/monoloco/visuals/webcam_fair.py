@@ -170,7 +170,10 @@ def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptabl
             iou = calculate_iou(fair_tlbr, mono_tlbr[0:4])
             ious.append(iou)
 
-        highest_iou = max(ious)
+        if not ious:
+            highest_iou = 0
+        else:
+            highest_iou = max(ious)
 
         monofair_dic_out["total_person"] += 1
         monofair_dic_out["active_person_ids"].append(online_ids[fair_id])
