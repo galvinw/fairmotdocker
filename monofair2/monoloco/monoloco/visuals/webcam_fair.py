@@ -222,11 +222,11 @@ def webcam(args):
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
     frame_id = 0
+    loop_id = 0
     for camera in itertools.cycle(camera_list):
         camera = read_camera_config(camera)
         if not camera: continue
 
-        loop_id = 0
 
 
         try:
@@ -243,6 +243,7 @@ def webcam(args):
                 start = time.time()
 
                 ret, frame = cam.read()
+                
                 image = cv2.resize(frame, (1920, 1080))
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
