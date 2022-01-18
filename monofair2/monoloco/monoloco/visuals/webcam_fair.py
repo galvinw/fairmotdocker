@@ -248,10 +248,17 @@ def webcam(args):
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
             
+                # Only run every nth frame
                 # skip_frame = 5
                 # if frame_id % skip_frame != 0:
                 #     frame_id += 1
                 #     continue
+
+                # Skip n frames at the beginning
+				# if frame_id < 470:
+				#     print(f'Skipping frame {frame_id}')
+				#     frame_id += 1
+				#     continue
 
                 ############# RE-ID (FairMOT) ############# 
                 img, _, _, _ = letterbox(image, height=1088, width=608)
