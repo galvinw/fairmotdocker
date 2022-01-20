@@ -207,7 +207,7 @@ def webcam(args):
     
     # ---- FairMOT init
     opt = options().init()
-    tracker = JDETracker(opt, frame_rate=30)
+    tracker = JDETracker(opt, frame_rate=1)
     # ---- Monoloco init
     args, dic_models = factory_from_args(args)
     # Load Models
