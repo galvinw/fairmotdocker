@@ -170,7 +170,10 @@ def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptabl
             iou = calculate_iou(fair_tlbr, mono_tlbr[0:4])
             ious.append(iou)
 
-        highest_iou = max(ious)
+        if not ious:
+            highest_iou = 0
+        else:
+            highest_iou = max(ious)
 
         monofair_dic_out["total_person"] += 1
         monofair_dic_out["active_person_ids"].append(online_ids[fair_id])
@@ -219,11 +222,11 @@ def webcam(args):
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
 
     frame_id = 0
+    loop_id = 0
     for camera in itertools.cycle(camera_list):
         camera = read_camera_config(camera)
         if not camera: continue
 
-        loop_id = 0
 
 
         try:
@@ -240,14 +243,22 @@ def webcam(args):
                 start = time.time()
 
                 ret, frame = cam.read()
+                
                 image = cv2.resize(frame, (1920, 1080))
                 # scale = (args.long_edge)/frame.shape[0]
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
             
+                # Only run every nth frame
                 # skip_frame = 5
                 # if frame_id % skip_frame != 0:
                 #     frame_id += 1
                 #     continue
+
+                # Skip n frames at the beginning
+				# if frame_id < 470:
+				#     print(f'Skipping frame {frame_id}')
+				#     frame_id += 1
+				#     continue
 
                 ############# RE-ID (FairMOT) ############# 
                 img, _, _, _ = letterbox(image, height=1088, width=608)
@@ -327,6 +338,7 @@ def webcam(args):
                 monofair_dic_out = merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptable_iou=0.30)
                 
                 # ''' Output monofair analyzed photos
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 online_im = vis.plot_tracking(image, monofair_dic_out["bboxes_tlwh"], monofair_dic_out["active_person_ids"], frame_id=frame_id,
                                 fps=1. / timer.average_time)
                 # '''

@@ -255,14 +255,14 @@ class JDETracker(object):
                 'out_width': inp_width // self.opt.down_ratio}
 
         # CUDA Availability Test
-        print("CUDA TEST START")
-        print(torch.cuda.is_available())        # Expected output: True
-        print(torch.cuda.current_device())      # Expected output: 0
-        print(torch.cuda.device(0))             # Expected output: <torch.cuda.device object at 0x7f1df548fe20>
-        print(torch.cuda.device_count())        # Expected output: 1
-        print(torch.cuda.get_device_name(0))    # Expected output: NVIDIA GeForce RTX 2070 SUPER
-        print(CUDA_HOME)                        # Expected output: /usr/local/cuda
-        print("CUDA TEST END")
+        # print("CUDA TEST START")
+        # print(torch.cuda.is_available())        # Expected output: True
+        # print(torch.cuda.current_device())      # Expected output: 0
+        # print(torch.cuda.device(0))             # Expected output: <torch.cuda.device object at 0x7f1df548fe20>
+        # print(torch.cuda.device_count())        # Expected output: 1
+        # print(torch.cuda.get_device_name(0))    # Expected output: NVIDIA GeForce RTX 2070 SUPER
+        # print(CUDA_HOME)                        # Expected output: /usr/local/cuda
+        # print("CUDA TEST END")
 
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():
