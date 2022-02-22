@@ -3,6 +3,7 @@
 import databases
 import ormar
 import sqlalchemy
+
 from datetime import datetime
 
 from config import settings
@@ -53,6 +54,7 @@ class PersonInstance(BaseModel):
     class Meta(ormar.ModelMeta):
         tablename = "person_instance"
 
+    person_id: int = ormar.Integer(nullable=True)
     name: str = ormar.String(max_length=128,nullable=False)
     camera_id: int = ormar.Integer(nullable=True)       # Not for production
     frame_id: int = ormar.Integer(nullable=True)        # Not for production
@@ -72,11 +74,11 @@ class Zone(BaseModel):
     zone_x2: int = ormar.Integer(nullable=False, default=0)
     zone_y2: int = ormar.Integer(nullable=False, default=0)
 
-class ZoneStatus(BaseModel):
-    class Meta(ormar.ModelMeta):
-        tablename = "zone_status"
+# class ZoneStatus(BaseModel):
+#     class Meta(ormar.ModelMeta):
+#         tablename = "zone_status"
 
-    zone_id: str = ormar.Integer(nullable=False, default=0)
+#     zone_id: str = ormar.Integer(nullable=False, default=0)
 
 class PersonZoneStatus(BaseModel):
     class Meta(ormar.ModelMeta):
