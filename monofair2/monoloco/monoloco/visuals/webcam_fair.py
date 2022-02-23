@@ -227,8 +227,6 @@ def webcam(args):
         camera = read_camera_config(camera)
         if not camera: continue
 
-
-
         try:
             print(f"Reading: {camera['cameraIP']}")
             cam = cv2.VideoCapture(camera['cameraIP'])
@@ -238,6 +236,7 @@ def webcam(args):
             # fairmot_results = []
 
             timer = Timer()
+            # start_video_time = time.time()
 
             while True:
                 start = time.time()
@@ -369,6 +368,7 @@ def webcam(args):
                     print(f"Unable to write output for 'output_{frame_id}.jpg'")
 
                 try:
+                    # online_im = resize_with_aspect_ratio(online_im, width=1000)
                     cv2.imshow('online_im', online_im)
                     cv2.waitKey(1)
                 except:
@@ -393,6 +393,12 @@ def webcam(args):
             print("Re-reading camera feed...")
             print(e)
             loop_id += 1
+
+            # Video mode
+            # end_video_time = time.time()
+            # LOG.info("Total video run-time: {:.2f} s".format(end_video_time-start_video_time))
+            # break
+
             continue
 
 def resize_with_aspect_ratio(image, width=None, height=None, inter=cv2.INTER_AREA):
