@@ -15,7 +15,6 @@ Icon?
 # FairMOT
 */FairMOT/DCNv2/_ext
 */FairMOT/DCNv2/build
-*/FairMOT/models/*.pth
 */FairMOT/DCNv2/DCNv2.egg-info
 */FairMOT/DCNv2/dist
 
@@ -31,6 +30,7 @@ venv.bak/
 videos/*.mp4
 
 # Models
-fairmot_dla34.pth
+monofair2/models*
 
+# Output images
 monofair2/output/*

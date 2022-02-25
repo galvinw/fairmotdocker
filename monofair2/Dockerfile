@@ -38,7 +38,7 @@ RUN (cd monoloco ; pip3.8 install -e .)
 ENV PYTHONPATH "${PYTHONPATH}:$PWD/fairmot/src/lib:$PWD/fairmot/DCNv2/src:$PWD/fairmot/DCNv2:build/bdist.linux-x86_64/egg"
 # ENV NVIDIA_VISIBLE_DEVICES all
 # ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
-# RUN python3.8 collect_env.py
+# RUN python3.8 collect_info.py
 # RUN nvidia-smi
 # RUN (cd fairmot ; python3.8 DCNv2/setup.py install develop --user)
 

@@ -9,7 +9,7 @@ and licensed under GNU AGPLv3
 import os
 import glob
 import json
-import copy
+# import copy
 import logging
 import time
 from collections import defaultdict
@@ -23,22 +23,42 @@ from openpifpaf import datasets
 from openpifpaf import decoder, network, visualizer, show, logger, Predictor
 from openpifpaf.predict import out_name
 
-try:
-    import gdown
-    DOWNLOAD = copy.copy(gdown.download)
-except ImportError:
-    DOWNLOAD = None
+# try:
+#     import gdown
+#     DOWNLOAD = copy.copy(gdown.download)
+# except ImportError:
+#     DOWNLOAD = None
 from .visuals.printer import Printer
 from .network import Loco, factory_for_gt, load_calibration, preprocess_pifpaf
 from .activity import show_activities
 
 LOG = logging.getLogger(__name__)
 
-OPENPIFPAF_MODEL = 'https://drive.google.com/uc?id=1b408ockhh29OLAED8Tysd2yGZOo0N_SQ'
-MONOLOCO_MODEL_KI = 'https://drive.google.com/uc?id=1krkB8J9JhgQp4xppmDu-YBRUxZvOs96r'
-MONOLOCO_MODEL_NU = 'https://drive.google.com/uc?id=1BKZWJ1rmkg5AF9rmBEfxF1r8s8APwcyC'
-MONSTEREO_MODEL = 'https://drive.google.com/uc?id=1xztN07dmp2e_nHI6Lcn103SAzt-Ntg49'
+# OPENPIFPAF_MODEL = 'https://drive.google.com/uc?id=1b408ockhh29OLAED8Tysd2yGZOo0N_SQ'
+# MONOLOCO_MODEL_KI = 'https://drive.google.com/uc?id=1krkB8J9JhgQp4xppmDu-YBRUxZvOs96r'
+# MONOLOCO_MODEL_NU = 'https://drive.google.com/uc?id=1BKZWJ1rmkg5AF9rmBEfxF1r8s8APwcyC'
+# MONSTEREO_MODEL = 'https://drive.google.com/uc?id=1xztN07dmp2e_nHI6Lcn103SAzt-Ntg49'
 
+# Docker work directory path
+OPENPIFPAF_MODEL = '/lauretta/models/shufflenetv2k30-201104-224654-cocokp-d75ed641.pkl'
+MONOLOCO_MODEL_KI = '/lauretta/models/monoloco_pp-201203-1424.pkl'
+MONOLOCO_MODEL_NU = '/lauretta/models/monoloco_pp-201207-1350.pkl'
+MONSTEREO_MODEL = '/lauretta/models/monstereo-201202-1212.pkl'
+
+import shutil
+
+def file_transfer(source, destination):
+	try:
+		shutil.copy(source, destination)
+		print(f"Model from {source} loaded successfully at {destination}.")
+		return destination
+
+	except PermissionError:
+		print("Permission denied.")
+
+	except Exception as e:
+		print(e)
+		print("Error occurred while copying file.")
 
 def get_torch_checkpoints_dir():
     if hasattr(torch, 'hub') and hasattr(torch.hub, 'get_dir'):
@@ -63,10 +83,11 @@ def download_checkpoints(args):
         pifpaf_model = args.checkpoint
     dic_models = {'keypoints': pifpaf_model}
     if not os.path.exists(pifpaf_model):
-        assert DOWNLOAD is not None, \
-            "pip install gdown to download a pifpaf model, or pass the model path as --checkpoint"
+        # assert DOWNLOAD is not None, \
+        #     "pip install gdown to download a pifpaf model, or pass the model path as --checkpoint"
         LOG.info('Downloading OpenPifPaf model in %s', torch_dir)
-        DOWNLOAD(OPENPIFPAF_MODEL, pifpaf_model, quiet=False)
+        file_transfer(OPENPIFPAF_MODEL, pifpaf_model)
+        # DOWNLOAD(OPENPIFPAF_MODEL, pifpaf_model, quiet=False)
 
     if args.mode == 'keypoints':
         return dic_models
@@ -89,10 +110,11 @@ def download_checkpoints(args):
 
     if not os.path.exists(model):
         os.makedirs(torch_dir, exist_ok=True)
-        assert DOWNLOAD is not None, \
-            "pip install gdown to download a monoloco model, or pass the model path as --model"
-        LOG.info('Downloading model in %s', torch_dir)
-        DOWNLOAD(path, model, quiet=False)
+        # assert DOWNLOAD is not None, \
+        #     "pip install gdown to download a monoloco model, or pass the model path as --model"
+        # LOG.info('Downloading model in %s', torch_dir)
+        file_transfer(path, model)
+        # DOWNLOAD(path, model, quiet=False)
     print(f"Using model: {name}")
     return dic_models
 
