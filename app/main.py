@@ -1,96 +1,170 @@
 # app/main.py
 
+from turtle import update
+from typing import List
 from fastapi import FastAPI, BackgroundTasks
-from pydantic import BaseModel
+from pydantic import Json
 from datetime import datetime
-from db import database, User, Zones, Cameras, PersonInstance, Person, Zone_Status
-import json
-# from src import track
+from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
+from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone
 
-app = FastAPI(title="Lauretta Built Environment Analytics")
-# fair = FastAPI()
+tags_metadata = [
+    {"name": "Users", "description": ""},
+    {"name": "Cameras", "description": ""},
+    {"name": "Persons", "description": ""},
+    {"name": "Person Instances", "description": ""},
+    {"name": "Person Zone Status", "description": ""},
+    {"name": "Zones", "description": ""},
+]
 
-
-
-class PersonRequest(BaseModel):
-    name: str
-
-class ZoneStatusRequest(BaseModel):
-    create_at: datetime
-    zone_id: int
-    number: int
-
+app = FastAPI(title="Lauretta Built Environment Analytics", openapi_tags=tags_metadata)
 
 @app.get("/")
 async def read_root():
-    return await User.objects.all()
+    return "Welcome to Lauretta Built Environment Analytics"
 
-@app.get("/users/")
+@app.get("/users/", response_model=List[User], tags=["Users"])
 async def read_users():
     return await User.objects.all()
 
-@app.get("/zone_status/" )
-async def read_zone_status(zoneid: int = 1):
-    return await Zone_Status.objects.filter(zone_id = zoneid).order_by(Zone_Status.create_at.desc()).limit(1).all()
+@app.post("/users/", response_model=User, tags=["Users"])
+async def create_user(user: RequestUser):
+    return await User.objects.get_or_create(username=user.username)
 
-@app.get("/cameras/")
+@app.get("/cameras/", response_model=List[Camera], tags=["Cameras"])
 async def read_cameras():
-    return await Cameras.objects.all()
+    return await Camera.objects.all()
 
-@app.get("/person_instance/")
+@app.post("/cameras/", response_model=Camera, tags=["Cameras"])
+async def create_camera(camera: RequestCamera):
+    return await Camera.objects.get_or_create(
+        name=camera.name,
+        connectionstring=camera.connectionstring,
+        threshold=camera.threshold,
+        lat=camera.lat,
+        long=camera.long,
+        camera_shift_time=camera.camera_shift_time,
+        focal_length=camera.focal_length)
+
+@app.get("/persons/", response_model=List[Person], tags=["Persons"])
+async def read_all_person():
+    return await Person.objects.exclude(is_deleted=True).all()
+
+@app.get("/persons/strack-id/{strack_id}", response_model=Person, tags=["Persons"])
+async def read_person_id(strack_id: int):
+    return await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
+
+@app.get("/persons/name/{name}", response_model=Person, tags=["Persons"])
+async def read_person_name(name: str):
+    return await Person.objects.exclude(is_deleted=True).get_or_none(name=name)
+
+@app.get("/persons/active", response_model=List[Person], tags=["Persons"])
+async def read_all_active_person():
+    return await Person.objects.filter(is_active='yes').exclude(is_deleted=True).all()
+
+@app.post("/persons/", response_model=Person, tags=["Persons"])
+async def create_active_person(person: RequestPerson):
+    return await Person.objects.get_or_create(
+        strack_id=person.strack_id,
+        name=person.name)
+
+@app.post("/persons/active/{strack_id}", response_model=Person, tags=["Persons"])
+async def reactivate_person(strack_id: int):
+    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_active=True, updated_at=datetime.now())
+
+@app.post("/persons/inactive/{strack_id}", response_model=Person, tags=["Persons"])
+async def inactivate_person(strack_id: int):
+    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_active=False, updated_at=datetime.now())
+
+@app.post("/persons/delete/{strack_id}", response_model=Person, tags=["Persons"])
+async def delete_person(strack_id: int):
+    person = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_deleted=True, updated_at=datetime.now())
+
+@app.post("/persons/undelete/{strack_id}", response_model=Person, tags=["Persons"])
+async def undelete_person(strack_id: int):
+    person = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_deleted=False, updated_at=datetime.now())
+
+@app.post("/person-instances/", response_model=PersonInstance, tags=["Person Instances"])
+async def create_person_instance(person_instance: RequestPersonInstance):
+    return await PersonInstance.objects.create(
+        strack_id=person_instance.strack_id,
+        name=person_instance.name,
+        camera_id=person_instance.camera_id, 
+        frame_id=person_instance.frame_id,
+        conf_level=person_instance.conf_level,
+        status=person_instance.status, 
+        position_x=person_instance.position_x, 
+        position_z=person_instance.position_z)
+
+@app.get("/person-instances/", response_model=List[PersonInstance], tags=["Person Instances"])
 async def read_person_instance():
     return await PersonInstance.objects.all()
 
-@app.get("/person/")
-async def read_person():
-    return await Person.objects.all()
+@app.get("/person-zone-status/", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_all_person_zone_status():
+    return await PersonZoneStatus.objects.all()
+@app.get("/person-zone-status/person-name/{person_name}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
+async def read_person_zone_status_by_name(person_name: str):
+    return await PersonZoneStatus.objects.get_or_none(person_name=person_name)
 
+@app.get("/person-zone-status/zone-id/{zone_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
+async def read_person_zone_status_by_zid(zone_id: int):
+    return await PersonZoneStatus.objects.get_or_none(zone_id=zone_id)
 
-@app.post("/add_zone_status/")
-async def update_zone_status(zone_status: Zone_Status):
-    zone_json = zone_status.json()
-    zone_dict = json.loads(zone_json)
+@app.get("/person-zone-status/strack-id/{strack_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
+async def read_person_zone_status_by_sid(strack_id: int):
+    return await PersonZoneStatus.objects.get_or_none(strack_id=strack_id)
 
-    await Zone_Status.objects.create(zone_id=int(zone_dict['zone_id']),number=int(zone_dict['number']))
-    return zone_dict
+@app.post("/person-zone-status/", response_model=PersonZoneStatus, tags=["Person Zone Status"])
+async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
+    return await PersonZoneStatus.objects.get_or_create(
+        strack_id=person_zone.strack_id,
+        person_name=person_zone.person_name, 
+        zone_id=person_zone.zone_id)
 
-@app.post("/add_person/", response_model=Person)
-async def add_person(person: Person):
-    person_json = person.json()
-    person_dict = json.loads(person_json)
+@app.get("/zones/", response_model=List[Zone], tags=["Zones"])
+async def read_all_zones():
+    return await Zone.objects.all()
 
-    await Person.objects.get_or_create(name=person_dict['name'])
-    return person_dict
+@app.post("/zones/", response_model=Zone, tags=["Zones"])
+async def create_zone(zone: RequestZone):
+    return await Zone.objects.create(
+        name=zone.name,
+        camera_id=zone.camera_id,
+        coordinates=zone.coordinates)
 
-@app.post("/add_person_instance/")
-async def add_person_instance(person_instance: PersonInstance):
-    person_instance_json = person_instance.json()
-    person_instance_dict = json.loads(person_instance_json)
+# @app.get("/zone_status/" )
+# async def read_zone_status(zoneid: int = 1):
+#     return await ZoneStatus.objects.filter(zone_id = zoneid).order_by(ZoneStatus.create_at.desc()).limit(1).all()
 
-    await PersonInstance.objects.create(name=person_instance_dict['name'],frame_id=int(person_instance_dict['frame_id']),x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
-    return person_instance_dict
+# @app.post("/add_zone_status/")
+# async def update_zone_status(zone_status: ZoneStatus):
+#     zone_json = zone_status.json()
+#     zone_dict = json.loads(zone_json)
 
-# @app.patch("/patch_person_instance/{frame_id}/{name}")
-# @app.patch("/patch_person_instance/")
-# async def patch_person_instance(person_instance: PersonInstance):
-#     person_instance_json = person_instance.json()
-#     person_instance_dict = json.loads(person_instance_json)
-
-#     await PersonInstance.objects.update_or_create(name=person_instance_dict['name'],frame_id=int(person_instance_dict['frame_id']),x=float(person_instance_dict['x']),z=float(person_instance_dict['z']))
-#     return person_instance_dict
+#     await ZoneStatus.objects.create(zone_id=int(zone_dict['zone_id']),number=int(zone_dict['number']))
+#     return zone_dict
 
 @app.on_event("startup")
 async def startup():
     if not database.is_connected:
         await database.connect()
         # create a dummy entry
-        await User.objects.get_or_create(email='test@email.com')
-        await Zones.objects.get_or_create(name="Zone 1")
-        await Cameras.objects.get_or_create(name="Camera 1",connectionstring='TestVideo17.mp4')
-        await camerareader()
-        await zonereader()
-        await PersonInstance.objects.get_or_create(name="PersonInstance0")
-        await Person.objects.get_or_create(name="Person 0")
+        # await User.objects.get_or_create(username='test@email.com')
+        # await Zone.objects.get_or_create(name="Zone 1")
+        # await Camera.objects.get_or_create(name="Camera 1",connectionstring='TestVideo17.mp4')
+        # await camerareader()
+        # await zonereader()
+        # await PersonInstance.objects.get_or_create(name="PersonInstance0")
+        # await Person.objects.get_or_create(name="Person 0")
         
 
 
@@ -100,45 +174,33 @@ async def shutdown():
         await database.disconnect()
 
 
+# async def camerareader():
 
-# @fair.on_event("startup")
-# async def startup():
-#     await FairMOT
+#     f = open("/config/cameras.txt", "r")
+#     camera_list = f.readlines()
+#     f.close()
+#     await Camera.objects.delete(each=True)
 
-# app.mount("/fair", fair)
+#     print("Camera CSV Length: {}",str(len(camera_list)))
 
+#     for element in camera_list:
+#         element = element.split(",")
+#         print(element)
 
-async def camerareader():
+#         await Camera.objects.get_or_create(name=element[0],connectionstring=element[1],threshold=int(element[2]),lat=float(element[3]),long=float(element[4]))
+#     print("Camera CSV Read")
 
-    f = open("/config/cameras.txt", "r")
-    camera_list = f.readlines()
-    f.close()
-    await Cameras.objects.delete(each=True)
+# async def zonereader():
 
-    print("Camera CSV Length: {}",str(len(camera_list)))
+#     f = open("/config/zones.txt", "r")
+#     zone_list = f.readlines()
+#     f.close()
+#     print("Zone CSV Length: {}",str(len(zone_list)))
+#     await Zone.objects.delete(each=True)
+#     for element in zone_list:
+#         element = element.split(",")
+#         print(element)
 
-    for element in camera_list:
-        element = element.split(",")
-        print(element)
+#         await Zone.objects.get_or_create(name=element[0],camera_id=int(element[1]),zone_x1=int(element[2]),zone_y1=int(element[3]),zone_x2=int(element[4]),zone_y2=int(element[5]))
+#     print("Zone CSV Read")
 
-        await Cameras.objects.get_or_create(name=element[0],connectionstring=element[1],threshold=int(element[2]),lat=float(element[3]),long=float(element[4]))
-    print("Camera CSV Read")
-
-async def zonereader():
-
-    f = open("/config/zones.txt", "r")
-    zone_list = f.readlines()
-    f.close()
-    print("Zone CSV Length: {}",str(len(zone_list)))
-    await Zones.objects.delete(each=True)
-    for element in zone_list:
-        element = element.split(",")
-        print(element)
-
-        await Zones.objects.get_or_create(name=element[0],camera_id=int(element[1]),x=int(element[2]),y=int(element[3]))
-    print("Zone CSV Read")
-
-
-# async def FairMOT():
-#     track.eval_prop()
-#     print("Running FairMOT Tracker")
