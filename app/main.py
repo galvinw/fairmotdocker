@@ -1,5 +1,6 @@
 # app/main.py
 
+from turtle import update
 from typing import List
 from fastapi import FastAPI, BackgroundTasks
 from pydantic import Json
@@ -72,14 +73,22 @@ async def reactivate_person(id: int):
     person = await Person.objects.get_or_none(id=id)
     if person is None:
         return None
-    return await person.update(is_active=True)
+    elif person.is_active==True:
+        return person
+    else:
+        now = datetime.now()
+        return await person.update(is_active=True, updated_at=now)
 
 @app.post("/persons/inactive/{id}", response_model=Person, tags=["Persons"])
 async def inactivate_person(id: int):
     person = await Person.objects.get_or_none(id=id)
     if person is None:
         return None
-    return await person.update(is_active=False)
+    elif person.is_active==False:
+        return person
+    else:
+        now = datetime.now()
+        return await person.update(is_active=False, updated_at=now)
 
 @app.post("/person-instances/", response_model=PersonInstance, tags=["Person Instances"])
 async def create_person_instance(person_instance: RequestPersonInstance):
