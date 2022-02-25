@@ -48,19 +48,19 @@ async def create_camera(camera: RequestCamera):
 
 @app.get("/persons/", response_model=List[Person], tags=["Persons"])
 async def read_all_person():
-    return await Person.objects.all()
+    return await Person.objects.exclude(is_deleted=True).all()
 
-@app.get("/persons/id/{id}", response_model=Person, tags=["Persons"])
-async def read_person_id(id: int):
-    return await Person.objects.get_or_none(id=id)
+@app.get("/persons/strack-id/{strack_id}", response_model=Person, tags=["Persons"])
+async def read_person_id(strack_id: int):
+    return await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
 
 @app.get("/persons/name/{name}", response_model=Person, tags=["Persons"])
 async def read_person_name(name: str):
-    return await Person.objects.get_or_none(name=name)
+    return await Person.objects.exclude(is_deleted=True).get_or_none(name=name)
 
 @app.get("/persons/active", response_model=List[Person], tags=["Persons"])
 async def read_all_active_person():
-    return await Person.objects.filter(is_active='yes').all()
+    return await Person.objects.filter(is_active='yes').exclude(is_deleted=True).all()
 
 @app.post("/persons/", response_model=Person, tags=["Persons"])
 async def create_active_person(person: RequestPerson):
@@ -68,27 +68,29 @@ async def create_active_person(person: RequestPerson):
         strack_id=person.strack_id,
         name=person.name)
 
-@app.post("/persons/active/{id}", response_model=Person, tags=["Persons"])
-async def reactivate_person(id: int):
-    person = await Person.objects.get_or_none(id=id)
-    if person is None:
-        return None
-    elif person.is_active==True:
-        return person
-    else:
-        now = datetime.now()
-        return await person.update(is_active=True, updated_at=now)
+@app.post("/persons/active/{strack_id}", response_model=Person, tags=["Persons"])
+async def reactivate_person(strack_id: int):
+    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_active=True, updated_at=datetime.now())
 
-@app.post("/persons/inactive/{id}", response_model=Person, tags=["Persons"])
-async def inactivate_person(id: int):
-    person = await Person.objects.get_or_none(id=id)
-    if person is None:
-        return None
-    elif person.is_active==False:
-        return person
-    else:
-        now = datetime.now()
-        return await person.update(is_active=False, updated_at=now)
+@app.post("/persons/inactive/{strack_id}", response_model=Person, tags=["Persons"])
+async def inactivate_person(strack_id: int):
+    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_active=False, updated_at=datetime.now())
+
+@app.post("/persons/delete/{strack_id}", response_model=Person, tags=["Persons"])
+async def delete_person(strack_id: int):
+    person = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_deleted=True, updated_at=datetime.now())
+
+@app.post("/persons/undelete/{strack_id}", response_model=Person, tags=["Persons"])
+async def undelete_person(strack_id: int):
+    person = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
+    if (person):
+        return await person.update(is_deleted=False, updated_at=datetime.now())
 
 @app.post("/person-instances/", response_model=PersonInstance, tags=["Person Instances"])
 async def create_person_instance(person_instance: RequestPersonInstance):
