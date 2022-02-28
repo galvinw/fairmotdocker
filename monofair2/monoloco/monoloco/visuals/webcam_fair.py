@@ -248,9 +248,9 @@ def webcam(args):
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
             
                 # Only run every nth frame
-                # skip_frame = 5
-                # if frame_id % skip_frame != 0:
-                #     frame_id += 1
+                # frames_to_skip = 5
+                # if skipped_frame_id % frames_to_skip != 0:
+                #     skipped_frame_id += 1
                 #     continue
 
                 # Skip n frames at the beginning
@@ -380,6 +380,7 @@ def webcam(args):
 
                 LOG.debug(dic_out)
                 frame_id += 1
+                skipped_frame_id += 1
 
                 # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
 
