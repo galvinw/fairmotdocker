@@ -6,7 +6,7 @@ from fastapi import FastAPI, BackgroundTasks
 from pydantic import Json
 from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
-from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone
+from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -140,6 +140,28 @@ async def create_zone(zone: RequestZone):
         name=zone.name,
         camera_id=zone.camera_id,
         coordinates=zone.coordinates)
+
+@app.post("/monofair/", response_model=PersonInstance, tags=["Person Instances"])
+async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: RequestFrame):
+    strack_id = dic_out.strack_id
+    person = await read_person_id(strack_id)
+    if (person):
+        name = person.name
+    else:
+        name = "Person Not Found"
+
+    person_instance = RequestPersonInstance(
+        strack_id=strack_id,
+        name=name,
+        camera_id=frame_info.camera_id,
+        frame_id=frame_info.frame_id,
+        conf_level=dic_out.conf_level,
+        status=dic_out.status,
+        position_x=dic_out.position_x,
+        position_z=dic_out.position_z
+    )
+
+    return await create_person_instance(person_instance)
 
 @app.on_event("startup")
 async def startup():

@@ -143,3 +143,20 @@ class RequestZone(pydantic.BaseModel):
     name          : str  
     camera_id     : int  
     coordinates   : Json 
+
+class RequestMonofair(pydantic.BaseModel):
+    class Config:
+        orm_mode = True
+
+    strack_id   : int  
+    conf_level  : float
+    status      : str  
+    position_x  : float
+    position_z  : float
+
+class RequestFrame(pydantic.BaseModel):
+    class Config:
+        orm_mode = True
+
+    camera_id   : int  
+    frame_id    : int  
