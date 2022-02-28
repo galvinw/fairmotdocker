@@ -220,8 +220,9 @@ def webcam(args):
 
     # for openpifpaf predictions
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
-
+    
     frame_id = 0
+    skipped_frame_id = 0
     loop_id = 0
     for camera in itertools.cycle(camera_list):
         camera = read_camera_config(camera)
@@ -418,6 +419,7 @@ def resize_with_aspect_ratio(image, width=None, height=None, inter=cv2.INTER_ARE
 	resized_image = cv2.resize(image, dim, interpolation=inter)
 
 	return resized_image
+
 def post_data(monofair_dic_out, frame_id):
     total_person = monofair_dic_out["total_person"]
     active_person_ids = monofair_dic_out["active_person_ids"]
