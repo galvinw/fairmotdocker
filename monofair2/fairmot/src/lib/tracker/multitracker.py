@@ -411,13 +411,26 @@ class JDETracker(object):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
-        logger.debug('===========Frame {}=========='.format(self.frame_id))
-        logger.debug('Activated: {}'.format([track.track_id for track in activated_starcks]))
-        logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
-        logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
-        logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
+        activated = [track.track_id for track in activated_starcks]
+        refind = [track.track_id for track in refind_stracks]
+        lost = [track.track_id for track in lost_stracks]
+        removed = [track.track_id for track in removed_stracks]
 
-        return output_stracks
+        logger.debug('===========Frame {}=========='.format(self.frame_id))
+        logger.debug('Activated: {}'.format(activated))
+        logger.debug('Refind: {}'.format(refind))
+        logger.debug('Lost: {}'.format(lost))
+        logger.debug('Removed: {}'.format(removed))
+
+        # Lost and Removed are not included in output_stracks 
+        track_status_obj = {
+            "Activated": activated,
+            "Refind": refind,
+            "Lost": lost,
+            "Removed": removed
+        }
+
+        return output_stracks, track_status_obj
 
 # Join both tlista and tlistb
 def joint_stracks(tlista, tlistb):
