@@ -141,66 +141,12 @@ async def create_zone(zone: RequestZone):
         camera_id=zone.camera_id,
         coordinates=zone.coordinates)
 
-# @app.get("/zone_status/" )
-# async def read_zone_status(zoneid: int = 1):
-#     return await ZoneStatus.objects.filter(zone_id = zoneid).order_by(ZoneStatus.create_at.desc()).limit(1).all()
-
-# @app.post("/add_zone_status/")
-# async def update_zone_status(zone_status: ZoneStatus):
-#     zone_json = zone_status.json()
-#     zone_dict = json.loads(zone_json)
-
-#     await ZoneStatus.objects.create(zone_id=int(zone_dict['zone_id']),number=int(zone_dict['number']))
-#     return zone_dict
-
 @app.on_event("startup")
 async def startup():
     if not database.is_connected:
         await database.connect()
-        # create a dummy entry
-        # await User.objects.get_or_create(username='test@email.com')
-        # await Zone.objects.get_or_create(name="Zone 1")
-        # await Camera.objects.get_or_create(name="Camera 1",connectionstring='TestVideo17.mp4')
-        # await camerareader()
-        # await zonereader()
-        # await PersonInstance.objects.get_or_create(name="PersonInstance0")
-        # await Person.objects.get_or_create(name="Person 0")
-        
-
 
 @app.on_event("shutdown")
 async def shutdown():
     if database.is_connected:
         await database.disconnect()
-
-
-# async def camerareader():
-
-#     f = open("/config/cameras.txt", "r")
-#     camera_list = f.readlines()
-#     f.close()
-#     await Camera.objects.delete(each=True)
-
-#     print("Camera CSV Length: {}",str(len(camera_list)))
-
-#     for element in camera_list:
-#         element = element.split(",")
-#         print(element)
-
-#         await Camera.objects.get_or_create(name=element[0],connectionstring=element[1],threshold=int(element[2]),lat=float(element[3]),long=float(element[4]))
-#     print("Camera CSV Read")
-
-# async def zonereader():
-
-#     f = open("/config/zones.txt", "r")
-#     zone_list = f.readlines()
-#     f.close()
-#     print("Zone CSV Length: {}",str(len(zone_list)))
-#     await Zone.objects.delete(each=True)
-#     for element in zone_list:
-#         element = element.split(",")
-#         print(element)
-
-#         await Zone.objects.get_or_create(name=element[0],camera_id=int(element[1]),zone_x1=int(element[2]),zone_y1=int(element[3]),zone_x2=int(element[4]),zone_y2=int(element[5]))
-#     print("Zone CSV Read")
-
