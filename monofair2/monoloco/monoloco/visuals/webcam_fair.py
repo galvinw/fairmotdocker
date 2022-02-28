@@ -265,14 +265,14 @@ def webcam(args):
                 img = np.ascontiguousarray(img, dtype=np.float32)
                 img /= 255.0
 
-                print(f"opt device is {opt.device}")
+                # print(f"opt device is {opt.device}")
 
                 if opt.device == torch.device('cpu'):
                     blob = torch.from_numpy(img).unsqueeze(0)
-                    print("CPU is used")
+                    # print("CPU is used")
                 else:
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
-                    print("CUDA is used")
+                    # print("CUDA is used")
 
                 online_targets = tracker.update(blob, image)
                 online_tlwhs = []
@@ -341,9 +341,9 @@ def webcam(args):
                 online_im = vis.plot_tracking(image, monofair_dic_out["bboxes_tlwh"], monofair_dic_out["active_person_ids"], frame_id=frame_id,
                                 fps=1. / timer.average_time)
                 # '''
-                print(f'monofair_dic_out : {monofair_dic_out}')
+                # print(f'monofair_dic_out : {monofair_dic_out}')
                 
-                post_data(monofair_dic_out, frame_id)
+                # post_data(monofair_dic_out, frame_id)
 
                 # if 'social_distance' in args.activities:
                 #     dic_out = net.social_distance(dic_out, args)
