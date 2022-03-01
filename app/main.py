@@ -212,9 +212,12 @@ async def post_zones(file_path):
         camera_name = zone_data["camera_name"]
         camera = await read_camera_name(camera_name)
 
+        coord = zone_data["coordinates"]
+        assert len(coord["position_x"]) == len(coord["position_z"]), "Position X should have the same number of coordinates with Position Z"
+
         zone = RequestZone(
             name=zone_data["zone_name"],
             camera_id=camera.id,
-            coordinates=json.dumps(zone_data["coordinates"])
+            coordinates=json.dumps(coord)
         )
         await create_zone(zone)
