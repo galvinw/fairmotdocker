@@ -87,7 +87,9 @@ You only need to build it once
     }
     ```
 3. If you are using the video file, place it in the `/videos/` folder
-4. Add any required zones in `zone.json` under `/config/` folder. The `"camera_name"` has to match with `camera.json` file
+4. Add any required zones in `zone.json` under `/config/` folder. 
+    - The `"camera_name"` has to match with `camera.json` file.
+    - Currently, it does not support overlapping zones.
 5. Run the following code at parent folder
 
 ```sh

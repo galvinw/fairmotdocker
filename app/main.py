@@ -7,7 +7,7 @@ from fastapi import FastAPI, BackgroundTasks
 from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
 from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
-from utils import read_json
+from utils import read_json, check_point_within_polygon
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -165,13 +165,18 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
         name = person.name
     else:
         name = "Person Not Found"
+    
+    x = dic_out.position_x
+    z = dic_out.position_z
+    zone_id = await check_person_within_any_zones(x, z)
 
-    # Pseudocode for person zone_status
-    '''
-    If (x, z) is within zone:
-        person_zone = RequestPersonZoneStatus(   )
-        create_person_zone_status(person_zone)
-    '''
+    if (zone_id):
+        person_zone = RequestPersonZoneStatus(
+            strack_id=strack_id,
+            person_name=name,
+            zone_id=zone_id
+        )
+        await create_person_zone_status(person_zone)
 
     person_instance = RequestPersonInstance(
         strack_id=strack_id,
@@ -229,3 +234,13 @@ async def post_zones(file_path):
             coordinates=json.dumps(coord)
         )
         await create_zone(zone)
+
+async def check_person_within_any_zones(x, z):
+    zones = await read_all_zones()
+
+    for zone in zones:
+        zone_id = zone.id
+        zone_x = zone.coordinates["position_x"]
+        zone_z = zone.coordinates["position_z"]
+        if (check_point_within_polygon(x, z, zone_x, zone_z)):
+            return zone_id
