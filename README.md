@@ -87,7 +87,8 @@ You only need to build it once
     }
     ```
 3. If you are using the video file, place it in the `/videos/` folder
-4. Run the following code at parent folder
+4. Add any required zones in `zone.json` under `/config/` folder. The `"camera_name"` has to match with `camera.json` file
+5. Run the following code at parent folder
 
 ```sh
 $ docker-compose build

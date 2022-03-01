@@ -1,9 +1,9 @@
 # app/main.py
 
-from turtle import update
+import json
+
 from typing import List
 from fastapi import FastAPI, BackgroundTasks
-from pydantic import Json
 from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
 from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
@@ -183,6 +183,7 @@ async def startup():
     if not database.is_connected:
         await database.connect()
         await post_cameras("/config/camera.json")
+        await post_zones("/config/zone.json")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -203,3 +204,17 @@ async def post_cameras(file_path):
             focal_length=cam["focal_length"]
         )
         await create_camera(camera)
+
+async def post_zones(file_path):
+    data = read_json(file_path)
+
+    for zone_data in data["zone_list"]:
+        camera_name = zone_data["camera_name"]
+        camera = await read_camera_name(camera_name)
+
+        zone = RequestZone(
+            name=zone_data["zone_name"],
+            camera_id=camera.id,
+            coordinates=json.dumps(zone_data["coordinates"])
+        )
+        await create_zone(zone)
