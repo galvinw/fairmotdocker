@@ -39,11 +39,14 @@ async def read_cameras():
 async def create_camera(camera: RequestCamera):
     return await Camera.objects.get_or_create(
         name=camera.name,
-        connectionstring=camera.connectionstring,
-        threshold=camera.threshold,
-        lat=camera.lat,
-        long=camera.long,
-        camera_shift_time=camera.camera_shift_time,
+        connection_string=camera.connection_string,
+        position_x=camera.position_x,
+        position_y=camera.position_y,
+        position_z=camera.position_z,
+        # threshold=camera.threshold,
+        # lat=camera.lat,
+        # long=camera.long,
+        # camera_shift_time=camera.camera_shift_time,
         focal_length=camera.focal_length)
 
 @app.get("/persons/", response_model=List[Person], tags=["Persons"])
