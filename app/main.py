@@ -36,6 +36,10 @@ async def create_user(user: RequestUser):
 async def read_cameras():
     return await Camera.objects.all()
 
+@app.get("/cameras/name/{name}", response_model=Camera, tags=["Cameras"])
+async def read_camera_name(name: str):
+    return await Camera.objects.exclude(is_deleted=True).get_or_none(name=name)
+
 @app.post("/cameras/", response_model=Camera, tags=["Cameras"])
 async def create_camera(camera: RequestCamera):
     return await Camera.objects.get_or_create(
