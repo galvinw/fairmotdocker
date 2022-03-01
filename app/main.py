@@ -1,12 +1,13 @@
 # app/main.py
 
-from turtle import update
+import json
+
 from typing import List
 from fastapi import FastAPI, BackgroundTasks
-from pydantic import Json
 from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
-from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone
+from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
+from utils import read_json, check_point_within_polygon
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -35,15 +36,22 @@ async def create_user(user: RequestUser):
 async def read_cameras():
     return await Camera.objects.all()
 
+@app.get("/cameras/name/{name}", response_model=Camera, tags=["Cameras"])
+async def read_camera_name(name: str):
+    return await Camera.objects.exclude(is_deleted=True).get_or_none(name=name)
+
 @app.post("/cameras/", response_model=Camera, tags=["Cameras"])
 async def create_camera(camera: RequestCamera):
     return await Camera.objects.get_or_create(
         name=camera.name,
-        connectionstring=camera.connectionstring,
-        threshold=camera.threshold,
-        lat=camera.lat,
-        long=camera.long,
-        camera_shift_time=camera.camera_shift_time,
+        connection_string=camera.connection_string,
+        position_x=camera.position_x,
+        position_y=camera.position_y,
+        position_z=camera.position_z,
+        # threshold=camera.threshold,
+        # lat=camera.lat,
+        # long=camera.long,
+        # camera_shift_time=camera.camera_shift_time,
         focal_length=camera.focal_length)
 
 @app.get("/persons/", response_model=List[Person], tags=["Persons"])
@@ -134,39 +142,61 @@ async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
 async def read_all_zones():
     return await Zone.objects.all()
 
+@app.get("/zones/name/{name}", response_model=Zone, tags=["Zones"])
+async def read_zone_name(name: str):
+    return await Zone.objects.exclude(is_deleted=True).get_or_none(name=name)
+
 @app.post("/zones/", response_model=Zone, tags=["Zones"])
 async def create_zone(zone: RequestZone):
-    return await Zone.objects.create(
-        name=zone.name,
-        camera_id=zone.camera_id,
-        coordinates=zone.coordinates)
+    name = zone.name
+    zone_in_db = await read_zone_name(name)
+    if not (zone_in_db):
+        # Unable to use get_or_create due to json type for coordinates
+        return await Zone.objects.create(
+            name=name,
+            camera_id=zone.camera_id,
+            coordinates=zone.coordinates)
 
-# @app.get("/zone_status/" )
-# async def read_zone_status(zoneid: int = 1):
-#     return await ZoneStatus.objects.filter(zone_id = zoneid).order_by(ZoneStatus.create_at.desc()).limit(1).all()
+@app.post("/monofair/", response_model=PersonInstance, tags=["Person Instances"])
+async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: RequestFrame):
+    strack_id = dic_out.strack_id
+    person = await read_person_id(strack_id)
+    if (person):
+        name = person.name
+    else:
+        name = "Person Not Found"
+    
+    x = dic_out.position_x
+    z = dic_out.position_z
+    zone_id = await check_person_within_any_zones(x, z)
 
-# @app.post("/add_zone_status/")
-# async def update_zone_status(zone_status: ZoneStatus):
-#     zone_json = zone_status.json()
-#     zone_dict = json.loads(zone_json)
+    if (zone_id):
+        person_zone = RequestPersonZoneStatus(
+            strack_id=strack_id,
+            person_name=name,
+            zone_id=zone_id
+        )
+        await create_person_zone_status(person_zone)
 
-#     await ZoneStatus.objects.create(zone_id=int(zone_dict['zone_id']),number=int(zone_dict['number']))
-#     return zone_dict
+    person_instance = RequestPersonInstance(
+        strack_id=strack_id,
+        name=name,
+        camera_id=frame_info.camera_id,
+        frame_id=frame_info.frame_id,
+        conf_level=dic_out.conf_level,
+        status=dic_out.status,
+        position_x=dic_out.position_x,
+        position_z=dic_out.position_z
+    )
+
+    return await create_person_instance(person_instance)
 
 @app.on_event("startup")
 async def startup():
     if not database.is_connected:
         await database.connect()
-        # create a dummy entry
-        # await User.objects.get_or_create(username='test@email.com')
-        # await Zone.objects.get_or_create(name="Zone 1")
-        # await Camera.objects.get_or_create(name="Camera 1",connectionstring='TestVideo17.mp4')
-        # await camerareader()
-        # await zonereader()
-        # await PersonInstance.objects.get_or_create(name="PersonInstance0")
-        # await Person.objects.get_or_create(name="Person 0")
-        
-
+        await post_cameras("/config/camera.json")
+        await post_zones("/config/zone.json")
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -174,33 +204,43 @@ async def shutdown():
         await database.disconnect()
 
 
-# async def camerareader():
+async def post_cameras(file_path):
+    data = read_json(file_path)
 
-#     f = open("/config/cameras.txt", "r")
-#     camera_list = f.readlines()
-#     f.close()
-#     await Camera.objects.delete(each=True)
+    for cam in data["camera_list"]:
+        camera = RequestCamera(
+            name=cam["camera_name"],
+            connection_string=cam["connection_string"],
+            position_x=cam["position_x"],
+            position_y=cam["position_y"],
+            position_z=cam["position_z"],
+            focal_length=cam["focal_length"]
+        )
+        await create_camera(camera)
 
-#     print("Camera CSV Length: {}",str(len(camera_list)))
+async def post_zones(file_path):
+    data = read_json(file_path)
 
-#     for element in camera_list:
-#         element = element.split(",")
-#         print(element)
+    for zone_data in data["zone_list"]:
+        camera_name = zone_data["camera_name"]
+        camera = await read_camera_name(camera_name)
 
-#         await Camera.objects.get_or_create(name=element[0],connectionstring=element[1],threshold=int(element[2]),lat=float(element[3]),long=float(element[4]))
-#     print("Camera CSV Read")
+        coord = zone_data["coordinates"]
+        assert len(coord["position_x"]) == len(coord["position_z"]), "Position X should have the same number of coordinates with Position Z"
 
-# async def zonereader():
+        zone = RequestZone(
+            name=zone_data["zone_name"],
+            camera_id=camera.id,
+            coordinates=json.dumps(coord)
+        )
+        await create_zone(zone)
 
-#     f = open("/config/zones.txt", "r")
-#     zone_list = f.readlines()
-#     f.close()
-#     print("Zone CSV Length: {}",str(len(zone_list)))
-#     await Zone.objects.delete(each=True)
-#     for element in zone_list:
-#         element = element.split(",")
-#         print(element)
+async def check_person_within_any_zones(x, z):
+    zones = await read_all_zones()
 
-#         await Zone.objects.get_or_create(name=element[0],camera_id=int(element[1]),zone_x1=int(element[2]),zone_y1=int(element[3]),zone_x2=int(element[4]),zone_y2=int(element[5]))
-#     print("Zone CSV Read")
-
+    for zone in zones:
+        zone_id = zone.id
+        zone_x = zone.coordinates["position_x"]
+        zone_z = zone.coordinates["position_z"]
+        if (check_point_within_polygon(x, z, zone_x, zone_z)):
+            return zone_id

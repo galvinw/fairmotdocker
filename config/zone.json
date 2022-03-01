@@ -1,0 +1,31 @@
+{
+    "zone_list": [
+        {
+            "zone_name": "divestment_zone_1",
+            "camera_name": "demo_video",
+            "coordinates": {
+                "type": "monoloco",
+                "position_x": [0.57, 2.85, 3.68, 2.26, 0.64],
+                "position_z": [3.36, 3.26, 1.97, 0.50, 1.24]
+            }
+        },
+        {
+            "zone_name": "divestment_zone_2",
+            "camera_name": "demo_video",
+            "coordinates": {
+                "type": "monoloco",
+                "position_x": [5.55, 6.53, 6.79, 8.29, 5.93],
+                "position_z": [3.26, 4.99, 2.82, 1.78, 1.77]
+            }
+        },
+        {
+            "zone_name": "divestment_zone_3",
+            "camera_name": "demo_video",
+            "coordinates": {
+                "type": "monoloco",
+                "position_x": [1.05, 2.15, 4.72, 4.31, 4.06],
+                "position_z": [4.84, 5.96, 6.41, 5.58, 3.75]
+            }
+        }
+    ]
+}

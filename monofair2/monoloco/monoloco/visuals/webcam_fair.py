@@ -36,8 +36,9 @@ from fairmot.src.lib.tracker.multitracker import JDETracker
 from fairmot.src.lib.tracking_utils import visualization as vis
 from fairmot.src.lib.tracking_utils.timer import Timer
 
+from monoloco.monoloco.utils.rest import create_person_instances, get_cameras
+
 LOG = logging.getLogger(__name__)
-BASE_URL = 'http://web:8000'
 
 def factory_from_args(args):
     # Model
@@ -98,22 +99,6 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
     return img, ratio, dw, dh
 
-def read_camera_config(camera):
-    print(camera)
-    camera = camera.strip().split(",")
-
-    if len(camera) < 7: return False
-
-    cam_info = {
-        'cameraName': camera[0],
-        'cameraIP': camera[1],
-        'threshold': camera[2],
-        'lat': camera[3],
-        'longi': camera[4],
-        'camera_shift_time': int(camera[6])
-    }
-    return cam_info
-
 def tlwh_to_tlbr(tlwh):
     ''' 
     A function to convert a bounding box coordinates with tlwh (FairMOT) format to tlbr (monoloco)
@@ -150,7 +135,7 @@ def tlbr_to_tlwh(tlbr):
 
     return tlwh
 
-def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptable_iou=0.30):
+def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, track_status_obj, acceptable_iou=0.30):
     ''' A function that combines FairMOT RE-ID data and Monoloco xyz values (distance from camera to person) '''
 
     monofair_dic_out = {
@@ -159,6 +144,7 @@ def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptabl
         "bboxes_tlwh": [],
         "bboxes_tlbr": [],
         "ious": [],
+        "status": [],
         "xyz_preds": [],
     }
     
@@ -176,7 +162,8 @@ def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptabl
             highest_iou = max(ious)
 
         monofair_dic_out["total_person"] += 1
-        monofair_dic_out["active_person_ids"].append(online_ids[fair_id])
+        track_id = online_ids[fair_id]
+        monofair_dic_out["active_person_ids"].append(track_id)
         
         if highest_iou > acceptable_iou:
             idx = ious.index(highest_iou)
@@ -198,6 +185,17 @@ def merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptabl
             monofair_dic_out["ious"].append(-1)
             monofair_dic_out["xyz_preds"].append([-100,-100,-100])
 
+        if track_id in track_status_obj["Activated"]:
+            monofair_dic_out["status"].append("Activated")
+        elif track_id in track_status_obj["Refind"]:
+            monofair_dic_out["status"].append("Refind")
+        # elif track_id in track_status_obj["Lost"]:
+        #     monofair_dic_out["status"].append("Lost")
+        # elif track_id in track_status_obj["Removed"]:
+        #     monofair_dic_out["status"].append("Removed")
+        # NOTE: There will be no person_instance with status "Lost" and "Removed" since both IDs are not included in JDE Tracker.update return value
+        # If Lost and removed needed to be included in the future, need to append the track_id to active_person_ids
+
     return monofair_dic_out
 
 
@@ -214,22 +212,19 @@ def webcam(args):
     net = Loco(model=dic_models[args.mode], mode=args.mode, device=args.device,
                n_dropout=args.n_dropout, p_dropout=args.dropout)
 
-    f = open("/config/cameras.txt", "r")
-    camera_list = f.readlines()
-    f.close()
+    camera_list = get_cameras()
 
     # for openpifpaf predictions
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
-
+    
     frame_id = 0
+    skipped_frame_id = 0
     loop_id = 0
     for camera in itertools.cycle(camera_list):
-        camera = read_camera_config(camera)
-        if not camera: continue
 
         try:
-            print(f"Reading: {camera['cameraIP']}")
-            cam = cv2.VideoCapture(camera['cameraIP'])
+            print(f"Reading: {camera['connection_string']}")
+            cam = cv2.VideoCapture(camera['connection_string'])
 
             # visualizer_mono = None
             
@@ -248,9 +243,9 @@ def webcam(args):
                 # image = cv2.resize(frame, None, fx=scale, fy=scale)
             
                 # Only run every nth frame
-                # skip_frame = 5
-                # if frame_id % skip_frame != 0:
-                #     frame_id += 1
+                # frames_to_skip = 5
+                # if skipped_frame_id % frames_to_skip != 0:
+                #     skipped_frame_id += 1
                 #     continue
 
                 # Skip n frames at the beginning
@@ -265,16 +260,16 @@ def webcam(args):
                 img = np.ascontiguousarray(img, dtype=np.float32)
                 img /= 255.0
 
-                print(f"opt device is {opt.device}")
+                # print(f"opt device is {opt.device}")
 
                 if opt.device == torch.device('cpu'):
                     blob = torch.from_numpy(img).unsqueeze(0)
-                    print("CPU is used")
+                    # print("CPU is used")
                 else:
                     blob = torch.from_numpy(img).cuda().unsqueeze(0)
-                    print("CUDA is used")
+                    # print("CUDA is used")
 
-                online_targets = tracker.update(blob, image)
+                online_targets, track_status_obj = tracker.update(blob, image)
                 online_tlwhs = []
                 online_ids = []
                 for t in online_targets:
@@ -334,16 +329,16 @@ def webcam(args):
                 dic_out = net.post_process(dic_out, boxes, keypoints, kk)
 
                 ############# Combine FairMOT and Monoloco based on IOU #############
-                monofair_dic_out = merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, acceptable_iou=0.30)
-                
+                monofair_dic_out = merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, track_status_obj, acceptable_iou=0.30)
+                create_person_instances(monofair_dic_out, camera_id=camera["id"], frame_id=frame_id)
+                 
                 # ''' Output monofair analyzed photos
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 online_im = vis.plot_tracking(image, monofair_dic_out["bboxes_tlwh"], monofair_dic_out["active_person_ids"], frame_id=frame_id,
                                 fps=1. / timer.average_time)
                 # '''
-                print(f'monofair_dic_out : {monofair_dic_out}')
+                # print(f'monofair_dic_out : {monofair_dic_out}')
                 
-                post_data(monofair_dic_out, frame_id)
 
                 # if 'social_distance' in args.activities:
                 #     dic_out = net.social_distance(dic_out, args)
@@ -380,6 +375,7 @@ def webcam(args):
 
                 LOG.debug(dic_out)
                 frame_id += 1
+                skipped_frame_id += 1
 
                 # visualizer_mono.send((pil_image, dic_out, pifpaf_outs))
 
@@ -417,56 +413,6 @@ def resize_with_aspect_ratio(image, width=None, height=None, inter=cv2.INTER_ARE
 	resized_image = cv2.resize(image, dim, interpolation=inter)
 
 	return resized_image
-def post_data(monofair_dic_out, frame_id):
-    total_person = monofair_dic_out["total_person"]
-    active_person_ids = monofair_dic_out["active_person_ids"]
-    xyz_preds = monofair_dic_out["xyz_preds"]
-
-    zone_status_obj = {
-                "zone_id": 1,
-                "number": total_person
-            }
-    try:
-        post_zone = requests.post(f"{BASE_URL}/add_zone_status/",json=zone_status_obj,headers={"content-type":"application/json","accept":"application/json"})
-        print(f"POST /add_zone_status successfully")
-    except:
-        print(f"no POST /add_zone_status")
-    
-    if total_person > 0 and len(xyz_preds) > 0:
-        for idx, id in enumerate(active_person_ids):
-
-            person_id_obj = {
-                "id": id,
-                "name": f"Person {id}"
-            }
-            try:
-                post_person = requests.post(f"{BASE_URL}/add_person/",
-                    json=person_id_obj,headers={"content-type":"application/json",
-                    "accept":"application/json"})
-                print(f"POST /add_person/")
-            except:
-                print(f"no POST /add_person/")
-            
-
-            x = xyz_preds[idx][0]
-            # y = xyz_preds[idx][1]
-            z = xyz_preds[idx][2]
-
-            person_instance_obj = {
-                "id": id,
-                "name": f"Person {id}",
-                "frame_id": frame_id,
-                "x": x,
-                "z": z
-            }
-        
-            try:
-                post_instance = requests.post(f"{BASE_URL}/add_person_instance/",
-                    json=person_instance_obj,headers={"content-type":"application/json",
-                    "accept":"application/json"})
-                print(f"POST /add_person_instance/")
-            except:
-                print(f"no POST /add_person_instance/")
 
 class Visualizer:
     def __init__(self, kk, args):
