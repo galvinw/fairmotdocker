@@ -36,7 +36,7 @@ from fairmot.src.lib.tracker.multitracker import JDETracker
 from fairmot.src.lib.tracking_utils import visualization as vis
 from fairmot.src.lib.tracking_utils.timer import Timer
 
-from monoloco.monoloco.utils.rest import create_person_instances
+from monoloco.monoloco.utils.rest import create_person_instances, get_cameras
 
 LOG = logging.getLogger(__name__)
 
@@ -98,22 +98,6 @@ def letterbox(img, height=608, width=1088, color=(127.5, 127.5, 127.5)):  # resi
     img = cv2.resize(img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # padded rectangular
     return img, ratio, dw, dh
-
-def read_camera_config(camera):
-    print(camera)
-    camera = camera.strip().split(",")
-
-    if len(camera) < 7: return False
-
-    cam_info = {
-        'cameraName': camera[0],
-        'cameraIP': camera[1],
-        'threshold': camera[2],
-        'lat': camera[3],
-        'longi': camera[4],
-        'camera_shift_time': int(camera[6])
-    }
-    return cam_info
 
 def tlwh_to_tlbr(tlwh):
     ''' 
@@ -228,9 +212,7 @@ def webcam(args):
     net = Loco(model=dic_models[args.mode], mode=args.mode, device=args.device,
                n_dropout=args.n_dropout, p_dropout=args.dropout)
 
-    f = open("/config/cameras.txt", "r")
-    camera_list = f.readlines()
-    f.close()
+    camera_list = get_cameras()
 
     # for openpifpaf predictions
     predictor = openpifpaf.Predictor(checkpoint=args.checkpoint)
@@ -239,12 +221,10 @@ def webcam(args):
     skipped_frame_id = 0
     loop_id = 0
     for camera in itertools.cycle(camera_list):
-        camera = read_camera_config(camera)
-        if not camera: continue
 
         try:
-            print(f"Reading: {camera['cameraIP']}")
-            cam = cv2.VideoCapture(camera['cameraIP'])
+            print(f"Reading: {camera['connection_string']}")
+            cam = cv2.VideoCapture(camera['connection_string'])
 
             # visualizer_mono = None
             
@@ -350,7 +330,7 @@ def webcam(args):
 
                 ############# Combine FairMOT and Monoloco based on IOU #############
                 monofair_dic_out = merge_fairmot_and_monoloco_data(online_ids, online_tlwhs, dic_out, track_status_obj, acceptable_iou=0.30)
-                create_person_instances(monofair_dic_out, camera_id=1, frame_id=frame_id)
+                create_person_instances(monofair_dic_out, camera_id=camera["id"], frame_id=frame_id)
                  
                 # ''' Output monofair analyzed photos
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)

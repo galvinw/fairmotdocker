@@ -7,6 +7,7 @@ from pydantic import Json
 from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
 from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
+from utils import read_json
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -153,6 +154,13 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
     else:
         name = "Person Not Found"
 
+    # Pseudocode for person zone_status
+    '''
+    If (x, z) is within zone:
+        person_zone = RequestPersonZoneStatus(   )
+        create_person_zone_status(person_zone)
+    '''
+
     person_instance = RequestPersonInstance(
         strack_id=strack_id,
         name=name,
@@ -170,8 +178,24 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
 async def startup():
     if not database.is_connected:
         await database.connect()
+        await post_cameras("/config/camera.json")
 
 @app.on_event("shutdown")
 async def shutdown():
     if database.is_connected:
         await database.disconnect()
+
+
+async def post_cameras(file_path):
+    data = read_json(file_path)
+
+    for cam in data["camera_list"]:
+        camera = RequestCamera(
+            name=cam["camera_name"],
+            connection_string=cam["connection_string"],
+            position_x=cam["position_x"],
+            position_y=cam["position_y"],
+            position_z=cam["position_z"],
+            focal_length=cam["focal_length"]
+        )
+        await create_camera(camera)

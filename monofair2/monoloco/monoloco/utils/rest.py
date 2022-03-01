@@ -2,6 +2,15 @@ import requests
 
 BASE_URL = 'http://web:8000'
 
+def get(url):
+    try:
+        res = requests.get(f"{BASE_URL}/{url}")
+        print(f"Successful GET/ {url}")
+        print(f"Response = {res}")
+    except Exception as e:
+        print(e)
+        print(f"Failed to GET/ {url}")
+
 def post(url, data=None):
     try:
         res = requests.post(f"{BASE_URL}/{url}", json=data, headers={"content-type":"application/json"})
@@ -11,6 +20,8 @@ def post(url, data=None):
         print(e)
         print(f"Failed to POST/ {url}")
 
+def get_cameras():
+    return get(f"cameras")
 
 def create_person(strack_id):
     person_obj = {
