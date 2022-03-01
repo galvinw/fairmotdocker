@@ -148,10 +148,14 @@ async def read_zone_name(name: str):
 
 @app.post("/zones/", response_model=Zone, tags=["Zones"])
 async def create_zone(zone: RequestZone):
-    return await Zone.objects.create(
-        name=zone.name,
-        camera_id=zone.camera_id,
-        coordinates=zone.coordinates)
+    name = zone.name
+    zone_in_db = await read_zone_name(name)
+    if not (zone_in_db):
+        # Unable to use get_or_create due to json type for coordinates
+        return await Zone.objects.create(
+            name=name,
+            camera_id=zone.camera_id,
+            coordinates=zone.coordinates)
 
 @app.post("/monofair/", response_model=PersonInstance, tags=["Person Instances"])
 async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: RequestFrame):
