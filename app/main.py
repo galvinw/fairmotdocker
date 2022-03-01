@@ -142,6 +142,10 @@ async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
 async def read_all_zones():
     return await Zone.objects.all()
 
+@app.get("/zones/name/{name}", response_model=Zone, tags=["Zones"])
+async def read_zone_name(name: str):
+    return await Zone.objects.exclude(is_deleted=True).get_or_none(name=name)
+
 @app.post("/zones/", response_model=Zone, tags=["Zones"])
 async def create_zone(zone: RequestZone):
     return await Zone.objects.create(
