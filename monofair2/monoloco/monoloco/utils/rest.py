@@ -7,6 +7,7 @@ def get(url):
         res = requests.get(f"{BASE_URL}/{url}")
         print(f"Successful GET/ {url}")
         print(f"Response = {res}")
+        return res
     except Exception as e:
         print(e)
         print(f"Failed to GET/ {url}")
@@ -16,12 +17,13 @@ def post(url, data=None):
         res = requests.post(f"{BASE_URL}/{url}", json=data, headers={"content-type":"application/json"})
         print(f"Successful POST/ {url}")
         print(f"Response = {res}")
+        return res
     except Exception as e:
         print(e)
         print(f"Failed to POST/ {url}")
 
 def get_cameras():
-    return get(f"cameras")
+    return get(f"cameras").json()
 
 def create_person(strack_id):
     person_obj = {
