@@ -34,11 +34,14 @@ class Camera(BaseModel):
         tablename = "camera"
 
     name                : str   = ormar.String  (max_length=128,nullable=False, default="Camera")
-    connectionstring    : str   = ormar.String  (max_length=256,nullable=False)
-    threshold           : int   = ormar.Integer (nullable=True)
-    lat                 : float = ormar.Float   (nullable=True)
-    long                : float = ormar.Float   (nullable=True)
-    camera_shift_time   : int   = ormar.Integer (default=0)
+    connection_string   : str   = ormar.String  (max_length=256,nullable=False)
+    # threshold           : int   = ormar.Integer (nullable=True)
+    # lat                 : float = ormar.Float   (nullable=True)
+    # long                : float = ormar.Float   (nullable=True)
+    # camera_shift_time   : int   = ormar.Integer (default=0)
+    position_x          : float = ormar.Float   (nullable=True)
+    position_y          : float = ormar.Float   (nullable=True)
+    position_z          : float = ormar.Float   (nullable=True)
     focal_length        : float = ormar.Float   (nullable=True)
     # lastchange          : datetime = ormar.DateTime(default=datetime.now) 
 
@@ -101,12 +104,16 @@ class RequestCamera(pydantic.BaseModel):
         orm_mode = True
 
     name                : str
-    connectionstring    : str
-    threshold           : int
-    lat                 : float
-    long                : float
-    camera_shift_time   : int
+    connection_string   : str
+    # threshold           : int
+    # lat                 : float
+    # long                : float
+    # camera_shift_time   : int
+    position_x          : float
+    position_y          : float
+    position_z          : float
     focal_length        : float
+
 
 class RequestPerson(pydantic.BaseModel):
     class Config:
@@ -143,3 +150,20 @@ class RequestZone(pydantic.BaseModel):
     name          : str  
     camera_id     : int  
     coordinates   : Json 
+
+class RequestMonofair(pydantic.BaseModel):
+    class Config:
+        orm_mode = True
+
+    strack_id   : int  
+    conf_level  : float
+    status      : str  
+    position_x  : float
+    position_z  : float
+
+class RequestFrame(pydantic.BaseModel):
+    class Config:
+        orm_mode = True
+
+    camera_id   : int  
+    frame_id    : int  

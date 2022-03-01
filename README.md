@@ -53,9 +53,44 @@ You only need to build it once
 
 1. Download  [monofair_models.zip](https://drive.google.com/file/d/1HDb36ReZc2knfu2nENHp8Fc9Mcq8zuwy/view?usp=sharing), unzip and place all the contents to the `/monofair2/models` folder
 
-2. Edit the `/config/camera.txt` file to use your own camera IP address. If you do not have a camera IP address, you may download a demo file from here [API Demo Video](https://www.dropbox.com/s/0c4szm1q9x2a83m/fastapidemoclip.mp4?dl=0)
+2. Edit the `/config/camera.json` file to use your own camera IP address. If you do not have a camera IP address, you may download a demo file from here [API Demo Video](https://www.dropbox.com/s/0c4szm1q9x2a83m/fastapidemoclip.mp4?dl=0)
+    ```json
+    # Example of camera.json, there must be at least 1 camera entry
+
+    {
+        "camera_list": [
+            {
+                "camera_name": "demo_video",
+                "connection_string": "/videos/fastapidemoclip.mp4",
+                "position_x": 10.264,
+                "position_y": 12.353,
+                "position_z": 0.231,
+                "focal_length": 2.8
+            },
+            {
+                "camera_name": "demo_rtsp",
+                "connection_string": "rtsp://admin:12345@192.168.1.210:554/Streaming/Channels/101",
+                "position_x": 0.323,
+                "position_y": 9.854,
+                "position_z": 10.32,
+                "focal_length": 4.2
+            },
+            {
+                "camera_name": "demo_camera",
+                "connection_string": "http://128.106.126.8:88/webcapture.jpg?command=snap&amp;channel=1?1646104969",
+                "position_x": 7.32,
+                "position_y": 30.213,
+                "position_z": 9.123,
+                "focal_length": 3.4
+            }
+        ]
+    }
+    ```
 3. If you are using the video file, place it in the `/videos/` folder
-4. Run the following code at parent folder
+4. Add any required zones in `zone.json` under `/config/` folder. 
+    - The `"camera_name"` has to match with `camera.json` file.
+    - Currently, it does not support overlapping zones.
+5. Run the following code at parent folder
 
 ```sh
 $ docker-compose build

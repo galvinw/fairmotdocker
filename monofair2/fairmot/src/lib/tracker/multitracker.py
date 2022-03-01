@@ -23,6 +23,8 @@ from ...lib.models.utils import _tranpose_and_gather_feat
 
 from torch.utils.cpp_extension import CUDA_HOME
 
+from monoloco.monoloco.utils.rest import create_person, inactivate_person, reactivate_person, delete_person
+
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
     def __init__(self, tlwh, score, temp_feat, buffer_size=30):
@@ -83,6 +85,9 @@ class STrack(BaseTrack):
         #self.is_activated = True
         self.frame_id = frame_id
         self.start_frame = frame_id
+                
+        create_person(self.track_id)
+        print(f"Added person at frame {frame_id}")
 
     def re_activate(self, new_track, frame_id, new_id=False):
         self.mean, self.covariance = self.kalman_filter.update(
@@ -96,6 +101,9 @@ class STrack(BaseTrack):
         self.frame_id = frame_id
         if new_id:
             self.track_id = self.next_id()
+        
+        reactivate_person(self.track_id)
+        print(f"Reactivated person at frame {frame_id}")
 
     def update(self, new_track, frame_id, update_feature=True):
         """
@@ -355,6 +363,8 @@ class JDETracker(object):
             if not track.state == TrackState.Lost:
                 track.mark_lost()
                 lost_stracks.append(track)
+                inactivate_person(track.track_id)
+                print(f"Inactivated person at frame {self.frame_id}")
 
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
         detections = [detections[i] for i in u_detection]
@@ -367,6 +377,10 @@ class JDETracker(object):
             track = unconfirmed[it]
             track.mark_removed()
             removed_stracks.append(track)
+
+            delete_person(track.track_id)
+            print(f"Delete person at frame {self.frame_id}")
+
 
         """ Step 4: Init new stracks"""
         for inew in u_detection:
@@ -381,6 +395,9 @@ class JDETracker(object):
                 track.mark_removed()
                 removed_stracks.append(track)
 
+                delete_person(track.track_id)
+                print(f"Delete person at frame {self.frame_id}")
+
         # print('Ramained match {} s'.format(t4-t3))
 
         self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
@@ -394,15 +411,28 @@ class JDETracker(object):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
+        activated = [track.track_id for track in activated_starcks]
+        refind = [track.track_id for track in refind_stracks]
+        lost = [track.track_id for track in lost_stracks]
+        removed = [track.track_id for track in removed_stracks]
+
         logger.debug('===========Frame {}=========='.format(self.frame_id))
-        logger.debug('Activated: {}'.format([track.track_id for track in activated_starcks]))
-        logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
-        logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
-        logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
+        logger.debug('Activated: {}'.format(activated))
+        logger.debug('Refind: {}'.format(refind))
+        logger.debug('Lost: {}'.format(lost))
+        logger.debug('Removed: {}'.format(removed))
 
-        return output_stracks
+        # Lost and Removed are not included in output_stracks 
+        track_status_obj = {
+            "Activated": activated,
+            "Refind": refind,
+            "Lost": lost,
+            "Removed": removed
+        }
 
+        return output_stracks, track_status_obj
 
+# Join both tlista and tlistb
 def joint_stracks(tlista, tlistb):
     exists = {}
     res = []
@@ -416,7 +446,7 @@ def joint_stracks(tlista, tlistb):
             res.append(t)
     return res
 
-
+# Remove tlistb from tlista 
 def sub_stracks(tlista, tlistb):
     stracks = {}
     for t in tlista:
