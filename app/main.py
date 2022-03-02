@@ -133,7 +133,7 @@ async def read_person_zone_status_by_sid(strack_id: int):
 
 @app.post("/person-zone-status/", response_model=PersonZoneStatus, tags=["Person Zone Status"])
 async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
-    return await PersonZoneStatus.objects.get_or_create(
+    return await PersonZoneStatus.objects.create(
         strack_id=person_zone.strack_id,
         person_name=person_zone.person_name, 
         zone_id=person_zone.zone_id)
