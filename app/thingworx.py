@@ -1,4 +1,6 @@
 import requests
+import json
+from datetime import date, datetime
 from urllib3.exceptions import InsecureRequestWarning
 
 PUSH_TO_THINGWORX = 'YES'         # 'y' or 'yes' for yes (case insensitive), any other values will be no
@@ -21,8 +23,14 @@ def put_twx_properties(prop: str, data=None):
         "Content-Type": "application/json", 
         "appKey": THINGWORX_APP_KEY
     }
-    data = {prop: data.json()}
 
+    if isinstance(data, list):
+        arr = [json.dumps(item.dict(), default=json_datetime) for item in data]
+        data = {"array": arr}
+        data = {prop: data}
+    else:
+        data = {prop: data.json()}
+        
     try:
         # NOTE: For production, verify=True should be used to check for server certificates
         res = requests.put(url, json=data, headers=headers, verify=False)
@@ -34,7 +42,7 @@ def put_twx_properties(prop: str, data=None):
         print(e)
         print(f"Failed to PUT/ {url}")
 
-def twx_post_camera(cam):
+def twx_post_cameras(cam):
     prop = "Camera"
     return put_twx_properties(prop, cam)
 
@@ -54,5 +62,12 @@ def main():
         requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
     else:
         print("Data will not be pushed to Thingworx")
+
+def json_datetime(obj):
+    """JSON serializer for objects not serializable by default json code"""
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
 
 main()

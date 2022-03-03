@@ -184,10 +184,9 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
     
     x = dic_out.position_x
     z = dic_out.position_z
-    zone_id = await check_person_within_any_zones(x, z)
+    zone_id, zone_name = await check_person_within_any_zones(x, z)
 
-    if (zone_id):
-        zone_name = read_zone_id(zone_id)
+    if zone_id and zone_name:
         person_zone = RequestPersonZoneStatus(
             strack_id=strack_id,
             person_name=name,
@@ -258,7 +257,8 @@ async def check_person_within_any_zones(x, z):
 
     for zone in zones:
         zone_id = zone.id
+        zone_name = zone.name
         zone_x = zone.coordinates["position_x"]
         zone_z = zone.coordinates["position_z"]
         if (check_point_within_polygon(x, z, zone_x, zone_z)):
-            return zone_id
+            return zone_id, zone_name
