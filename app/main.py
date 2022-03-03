@@ -8,7 +8,7 @@ from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
 from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
 from utils import read_json, check_point_within_polygon
-from thingworx import twx_post_camera, twx_post_zone
+from thingworx import twx_post_cameras, twx_post_zone, twx_post_person_list, check_twx
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -54,7 +54,8 @@ async def create_camera(camera: RequestCamera):
         # long=camera.long,
         # camera_shift_time=camera.camera_shift_time,
         focal_length=camera.focal_length)
-    twx_post_camera(cam)
+    cameras = await read_cameras()
+    twx_post_cameras(cameras)
     return cam
 
 @app.get("/persons/", response_model=List[Person], tags=["Persons"])
@@ -73,8 +74,15 @@ async def read_person_name(name: str):
 async def read_all_active_person():
     return await Person.objects.filter(is_active='yes').exclude(is_deleted=True).all()
 
+async def twx_post_persons():
+    if not (check_twx()):
+        return None
+    active_persons = await read_all_active_person()
+    return twx_post_person_list(active_persons)
+
 @app.post("/persons/", response_model=Person, tags=["Persons"])
 async def create_active_person(person: RequestPerson):
+    twx_post_persons()
     return await Person.objects.get_or_create(
         strack_id=person.strack_id,
         name=person.name)
@@ -83,24 +91,29 @@ async def create_active_person(person: RequestPerson):
 async def reactivate_person(strack_id: int):
     person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
     if (person):
+        twx_post_persons()
+
         return await person.update(is_active=True, updated_at=datetime.now())
 
 @app.post("/persons/inactive/{strack_id}", response_model=Person, tags=["Persons"])
 async def inactivate_person(strack_id: int):
     person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
     if (person):
+        twx_post_persons()
         return await person.update(is_active=False, updated_at=datetime.now())
 
 @app.post("/persons/delete/{strack_id}", response_model=Person, tags=["Persons"])
 async def delete_person(strack_id: int):
     person = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
     if (person):
+        twx_post_persons()
         return await person.update(is_deleted=True, updated_at=datetime.now())
 
 @app.post("/persons/undelete/{strack_id}", response_model=Person, tags=["Persons"])
 async def undelete_person(strack_id: int):
     person = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
     if (person):
+        twx_post_persons()
         return await person.update(is_deleted=False, updated_at=datetime.now())
 
 @app.post("/person-instances/", response_model=PersonInstance, tags=["Person Instances"])

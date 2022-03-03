@@ -51,6 +51,9 @@ def twx_post_zone(person_zone):
     prop = person_zone.zone_name
     return put_twx_properties(prop, person_zone)
 
+def twx_post_person_list(active_persons):
+    prop = "PersonList"
+    return put_twx_properties(prop, active_persons)
 
 def main():
     if check_twx():
