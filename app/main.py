@@ -8,6 +8,7 @@ from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
 from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
 from utils import read_json, check_point_within_polygon
+from thingworx import twx_post_camera, twx_post_zone
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -42,7 +43,7 @@ async def read_camera_name(name: str):
 
 @app.post("/cameras/", response_model=Camera, tags=["Cameras"])
 async def create_camera(camera: RequestCamera):
-    return await Camera.objects.get_or_create(
+    cam = await Camera.objects.get_or_create(
         name=camera.name,
         connection_string=camera.connection_string,
         position_x=camera.position_x,
@@ -53,6 +54,8 @@ async def create_camera(camera: RequestCamera):
         # long=camera.long,
         # camera_shift_time=camera.camera_shift_time,
         focal_length=camera.focal_length)
+    twx_post_camera(cam)
+    return cam
 
 @app.get("/persons/", response_model=List[Person], tags=["Persons"])
 async def read_all_person():
@@ -137,11 +140,15 @@ async def read_person_zone_status_by_zone_name(zone_name: str):
     return await PersonZoneStatus.objects.filter(zone_name=zone_name).all()
 
 @app.post("/person-zone-status/", response_model=PersonZoneStatus, tags=["Person Zone Status"])
-async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
-    return await PersonZoneStatus.objects.create(
+async def create_person_zone_status(person_zone: RequestPersonZoneStatus):    
+    person_zone = await PersonZoneStatus.objects.create(
         strack_id=person_zone.strack_id,
         person_name=person_zone.person_name, 
-        zone_id=person_zone.zone_id)
+        zone_id=person_zone.zone_id,
+        zone_name=person_zone.zone_name)
+    
+    twx_post_zone(person_zone)
+    return person_zone
 
 @app.get("/zones/", response_model=List[Zone], tags=["Zones"])
 async def read_all_zones():
@@ -180,10 +187,12 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
     zone_id = await check_person_within_any_zones(x, z)
 
     if (zone_id):
+        zone_name = read_zone_id(zone_id)
         person_zone = RequestPersonZoneStatus(
             strack_id=strack_id,
             person_name=name,
-            zone_id=zone_id
+            zone_id=zone_id,
+            zone_name=zone_name
         )
         await create_person_zone_status(person_zone)
 
