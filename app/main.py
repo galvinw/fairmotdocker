@@ -119,13 +119,18 @@ async def read_person_instance():
 @app.get("/person-zone-status/", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
 async def read_all_person_zone_status():
     return await PersonZoneStatus.objects.all()
-@app.get("/person-zone-status/person-name/{person_name}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
-async def read_person_zone_status_by_name(person_name: str):
-    return await PersonZoneStatus.objects.get_or_none(person_name=person_name)
 
-@app.get("/person-zone-status/zone-id/{zone_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
+@app.get("/person-zone-status/strack-id/{strack_id}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_person_zone_status_by_sid(strack_id: int):
+    return await PersonZoneStatus.objects.filter(strack_id=strack_id).all()
+
+@app.get("/person-zone-status/person-name/{person_name}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_person_zone_status_by_person_name(person_name: str):
+    return await PersonZoneStatus.objects.filter(person_name=person_name).all()
+
+@app.get("/person-zone-status/zone-id/{zone_id}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
 async def read_person_zone_status_by_zid(zone_id: int):
-    return await PersonZoneStatus.objects.get_or_none(zone_id=zone_id)
+    return await PersonZoneStatus.objects.filter(zone_id=zone_id).all()
 
 @app.get("/person-zone-status/strack-id/{strack_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
 async def read_person_zone_status_by_sid(strack_id: int):
