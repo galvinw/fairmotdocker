@@ -132,9 +132,9 @@ async def read_person_zone_status_by_person_name(person_name: str):
 async def read_person_zone_status_by_zid(zone_id: int):
     return await PersonZoneStatus.objects.filter(zone_id=zone_id).all()
 
-@app.get("/person-zone-status/strack-id/{strack_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
-async def read_person_zone_status_by_sid(strack_id: int):
-    return await PersonZoneStatus.objects.get_or_none(strack_id=strack_id)
+@app.get("/person-zone-status/zone-name/{zone_name}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_person_zone_status_by_zone_name(zone_name: str):
+    return await PersonZoneStatus.objects.filter(zone_name=zone_name).all()
 
 @app.post("/person-zone-status/", response_model=PersonZoneStatus, tags=["Person Zone Status"])
 async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
@@ -146,6 +146,10 @@ async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
 @app.get("/zones/", response_model=List[Zone], tags=["Zones"])
 async def read_all_zones():
     return await Zone.objects.all()
+
+@app.get("/zones/id/{id}", response_model=Zone, tags=["Zones"])
+async def read_zone_id(id: int):
+    return await Zone.objects.exclude(is_deleted=True).get_or_none(id=id)
 
 @app.get("/zones/name/{name}", response_model=Zone, tags=["Zones"])
 async def read_zone_name(name: str):
