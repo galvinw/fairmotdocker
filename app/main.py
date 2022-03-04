@@ -82,39 +82,43 @@ async def twx_post_persons():
 
 @app.post("/persons/", response_model=Person, tags=["Persons"])
 async def create_active_person(person: RequestPerson):
-    twx_post_persons()
-    return await Person.objects.get_or_create(
+    person = await Person.objects.get_or_create(
         strack_id=person.strack_id,
         name=person.name)
+    await twx_post_persons()
+    return person
 
 @app.post("/persons/active/{strack_id}", response_model=Person, tags=["Persons"])
 async def reactivate_person(strack_id: int):
-    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
-    if (person):
-        twx_post_persons()
-
-        return await person.update(is_active=True, updated_at=datetime.now())
+    person_db = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_active=True, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/persons/inactive/{strack_id}", response_model=Person, tags=["Persons"])
 async def inactivate_person(strack_id: int):
-    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
-    if (person):
-        twx_post_persons()
-        return await person.update(is_active=False, updated_at=datetime.now())
+    person_db = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_active=False, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/persons/delete/{strack_id}", response_model=Person, tags=["Persons"])
 async def delete_person(strack_id: int):
-    person = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
-    if (person):
-        twx_post_persons()
-        return await person.update(is_deleted=True, updated_at=datetime.now())
+    person_db = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_deleted=True, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/persons/undelete/{strack_id}", response_model=Person, tags=["Persons"])
 async def undelete_person(strack_id: int):
-    person = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
-    if (person):
-        twx_post_persons()
-        return await person.update(is_deleted=False, updated_at=datetime.now())
+    person_db = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_deleted=False, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/person-instances/", response_model=PersonInstance, tags=["Person Instances"])
 async def create_person_instance(person_instance: RequestPersonInstance):
@@ -197,14 +201,14 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
     
     x = dic_out.position_x
     z = dic_out.position_z
-    zone_id, zone_name = await check_person_within_any_zones(x, z)
+    zone = await check_person_within_any_zones(x, z)
 
-    if zone_id and zone_name:
+    if (zone):
         person_zone = RequestPersonZoneStatus(
             strack_id=strack_id,
             person_name=name,
-            zone_id=zone_id,
-            zone_name=zone_name
+            zone_id=zone.id,
+            zone_name=zone.name
         )
         await create_person_zone_status(person_zone)
 
@@ -274,4 +278,4 @@ async def check_person_within_any_zones(x, z):
         zone_x = zone.coordinates["position_x"]
         zone_z = zone.coordinates["position_z"]
         if (check_point_within_polygon(x, z, zone_x, zone_z)):
-            return zone_id, zone_name
+            return zone
