@@ -87,6 +87,7 @@ class PersonZoneStatus(BaseModel):
     strack_id   : int = ormar.Integer   (nullable=False)
     person_name : str = ormar.String    (max_length=128,nullable=False)
     zone_id     : int = ormar.Integer   (index=True, nullable=False)
+    zone_name : str = ormar.String    (max_length=128,nullable=False)
 
 
 engine = sqlalchemy.create_engine(settings.db_url)
@@ -142,6 +143,7 @@ class RequestPersonZoneStatus(pydantic.BaseModel):
     strack_id   : int
     person_name : str
     zone_id     : int
+    zone_name : str
 
 class RequestZone(pydantic.BaseModel):
     class Config:

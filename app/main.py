@@ -8,6 +8,7 @@ from datetime import datetime
 from db import database, User, Camera, Person, PersonInstance, Zone, PersonZoneStatus 
 from db import RequestUser, RequestCamera, RequestPerson, RequestPersonInstance, RequestPersonZoneStatus, RequestZone, RequestMonofair, RequestFrame
 from utils import read_json, check_point_within_polygon
+from thingworx import twx_post_cameras, twx_post_zone, twx_post_person_list, check_twx
 
 tags_metadata = [
     {"name": "Users", "description": ""},
@@ -42,7 +43,7 @@ async def read_camera_name(name: str):
 
 @app.post("/cameras/", response_model=Camera, tags=["Cameras"])
 async def create_camera(camera: RequestCamera):
-    return await Camera.objects.get_or_create(
+    cam = await Camera.objects.get_or_create(
         name=camera.name,
         connection_string=camera.connection_string,
         position_x=camera.position_x,
@@ -53,6 +54,9 @@ async def create_camera(camera: RequestCamera):
         # long=camera.long,
         # camera_shift_time=camera.camera_shift_time,
         focal_length=camera.focal_length)
+    cameras = await read_cameras()
+    twx_post_cameras(cameras)
+    return cam
 
 @app.get("/persons/", response_model=List[Person], tags=["Persons"])
 async def read_all_person():
@@ -70,35 +74,51 @@ async def read_person_name(name: str):
 async def read_all_active_person():
     return await Person.objects.filter(is_active='yes').exclude(is_deleted=True).all()
 
+async def twx_post_persons():
+    if not (check_twx()):
+        return None
+    active_persons = await read_all_active_person()
+    return twx_post_person_list(active_persons)
+
 @app.post("/persons/", response_model=Person, tags=["Persons"])
 async def create_active_person(person: RequestPerson):
-    return await Person.objects.get_or_create(
+    person = await Person.objects.get_or_create(
         strack_id=person.strack_id,
         name=person.name)
+    await twx_post_persons()
+    return person
 
 @app.post("/persons/active/{strack_id}", response_model=Person, tags=["Persons"])
 async def reactivate_person(strack_id: int):
-    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
-    if (person):
-        return await person.update(is_active=True, updated_at=datetime.now())
+    person_db = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == True)).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_active=True, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/persons/inactive/{strack_id}", response_model=Person, tags=["Persons"])
 async def inactivate_person(strack_id: int):
-    person = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
-    if (person):
-        return await person.update(is_active=False, updated_at=datetime.now())
+    person_db = await Person.objects.exclude((Person.is_deleted == True) | (Person.is_active == False)).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_active=False, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/persons/delete/{strack_id}", response_model=Person, tags=["Persons"])
 async def delete_person(strack_id: int):
-    person = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
-    if (person):
-        return await person.update(is_deleted=True, updated_at=datetime.now())
+    person_db = await Person.objects.exclude(is_deleted=True).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_deleted=True, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/persons/undelete/{strack_id}", response_model=Person, tags=["Persons"])
 async def undelete_person(strack_id: int):
-    person = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
-    if (person):
-        return await person.update(is_deleted=False, updated_at=datetime.now())
+    person_db = await Person.objects.exclude(is_deleted=False).get_or_none(strack_id=strack_id)
+    if (person_db):
+        person = await person_db.update(is_deleted=False, updated_at=datetime.now())
+        await twx_post_persons()
+        return person
 
 @app.post("/person-instances/", response_model=PersonInstance, tags=["Person Instances"])
 async def create_person_instance(person_instance: RequestPersonInstance):
@@ -119,28 +139,41 @@ async def read_person_instance():
 @app.get("/person-zone-status/", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
 async def read_all_person_zone_status():
     return await PersonZoneStatus.objects.all()
-@app.get("/person-zone-status/person-name/{person_name}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
-async def read_person_zone_status_by_name(person_name: str):
-    return await PersonZoneStatus.objects.get_or_none(person_name=person_name)
 
-@app.get("/person-zone-status/zone-id/{zone_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
-async def read_person_zone_status_by_zid(zone_id: int):
-    return await PersonZoneStatus.objects.get_or_none(zone_id=zone_id)
-
-@app.get("/person-zone-status/strack-id/{strack_id}", response_model=PersonZoneStatus, tags=["Person Zone Status"])
+@app.get("/person-zone-status/strack-id/{strack_id}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
 async def read_person_zone_status_by_sid(strack_id: int):
-    return await PersonZoneStatus.objects.get_or_none(strack_id=strack_id)
+    return await PersonZoneStatus.objects.filter(strack_id=strack_id).all()
+
+@app.get("/person-zone-status/person-name/{person_name}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_person_zone_status_by_person_name(person_name: str):
+    return await PersonZoneStatus.objects.filter(person_name=person_name).all()
+
+@app.get("/person-zone-status/zone-id/{zone_id}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_person_zone_status_by_zid(zone_id: int):
+    return await PersonZoneStatus.objects.filter(zone_id=zone_id).all()
+
+@app.get("/person-zone-status/zone-name/{zone_name}", response_model=List[PersonZoneStatus], tags=["Person Zone Status"])
+async def read_person_zone_status_by_zone_name(zone_name: str):
+    return await PersonZoneStatus.objects.filter(zone_name=zone_name).all()
 
 @app.post("/person-zone-status/", response_model=PersonZoneStatus, tags=["Person Zone Status"])
-async def create_person_zone_status(person_zone: RequestPersonZoneStatus):
-    return await PersonZoneStatus.objects.get_or_create(
+async def create_person_zone_status(person_zone: RequestPersonZoneStatus):    
+    person_zone = await PersonZoneStatus.objects.create(
         strack_id=person_zone.strack_id,
         person_name=person_zone.person_name, 
-        zone_id=person_zone.zone_id)
+        zone_id=person_zone.zone_id,
+        zone_name=person_zone.zone_name)
+    
+    twx_post_zone(person_zone)
+    return person_zone
 
 @app.get("/zones/", response_model=List[Zone], tags=["Zones"])
 async def read_all_zones():
     return await Zone.objects.all()
+
+@app.get("/zones/id/{id}", response_model=Zone, tags=["Zones"])
+async def read_zone_id(id: int):
+    return await Zone.objects.exclude(is_deleted=True).get_or_none(id=id)
 
 @app.get("/zones/name/{name}", response_model=Zone, tags=["Zones"])
 async def read_zone_name(name: str):
@@ -168,13 +201,14 @@ async def process_monofair_dic_out(dic_out: RequestMonofair, frame_info: Request
     
     x = dic_out.position_x
     z = dic_out.position_z
-    zone_id = await check_person_within_any_zones(x, z)
+    zone = await check_person_within_any_zones(x, z)
 
-    if (zone_id):
+    if (zone):
         person_zone = RequestPersonZoneStatus(
             strack_id=strack_id,
             person_name=name,
-            zone_id=zone_id
+            zone_id=zone.id,
+            zone_name=zone.name
         )
         await create_person_zone_status(person_zone)
 
@@ -240,7 +274,8 @@ async def check_person_within_any_zones(x, z):
 
     for zone in zones:
         zone_id = zone.id
+        zone_name = zone.name
         zone_x = zone.coordinates["position_x"]
         zone_z = zone.coordinates["position_z"]
         if (check_point_within_polygon(x, z, zone_x, zone_z)):
-            return zone_id
+            return zone
