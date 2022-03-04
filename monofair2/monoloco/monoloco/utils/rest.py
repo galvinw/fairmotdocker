@@ -5,7 +5,7 @@ BASE_URL = 'http://web:8000'
 def get(url):
     try:
         res = requests.get(f"{BASE_URL}/{url}")
-        print(f"Successful GET/ {url}")
+        print(f"GET/ {url}")
         print(f"Response = {res}")
         return res
     except Exception as e:
@@ -15,7 +15,7 @@ def get(url):
 def post(url, data=None):
     try:
         res = requests.post(f"{BASE_URL}/{url}", json=data, headers={"content-type":"application/json"})
-        print(f"Successful POST/ {url}")
+        print(f"POST/ {url}")
         print(f"Response = {res}")
         return res
     except Exception as e:
@@ -30,16 +30,16 @@ def create_person(strack_id):
         "strack_id": strack_id,
         "name": f"Person {strack_id}"
     }
-    post(f"persons", person_obj)
+    return post(f"persons", person_obj)
 
 def inactivate_person(strack_id):
-    post(f"persons/inactive/{strack_id}")
+    return post(f"persons/inactive/{strack_id}")
     
 def reactivate_person(strack_id):
-    post(f"persons/active/{strack_id}")
+    return post(f"persons/active/{strack_id}")
 
 def delete_person(strack_id):
-    post(f"persons/delete/{strack_id}")
+    return post(f"persons/delete/{strack_id}")
     
 def create_person_instances(monofair_dic_out, camera_id, frame_id):
     total_person = monofair_dic_out["total_person"]

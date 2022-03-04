@@ -1,25 +1,25 @@
 {
     "zone_list": [
         {
-            "zone_name": "divestment_zone_1",
+            "zone_name": "DivestZone1",
             "camera_name": "demo_video",
             "coordinates": {
                 "type": "monoloco",
-                "position_x": [0.57, 2.85, 3.68, 2.26, 0.64],
-                "position_z": [3.36, 3.26, 1.97, 0.50, 1.24]
+                "position_x": [-0.3, -0.31, -0.32, -0.25, -0.2, -0.22, -0.27],
+                "position_z": [5.4, 5.3, 5.15, 5.18, 5.25, 5.4, 5.45]
             }
         },
         {
-            "zone_name": "divestment_zone_2",
+            "zone_name": "DivestZone2",
             "camera_name": "demo_video",
             "coordinates": {
                 "type": "monoloco",
-                "position_x": [5.55, 6.53, 6.79, 8.29, 5.93],
-                "position_z": [3.26, 4.99, 2.82, 1.78, 1.77]
+                "position_x": [1.02, 1.02, 1.03, 1.045, 1.06, 1.08],
+                "position_z": [6, 5.8, 5.7, 5.7, 5.8, 5.9]
             }
         },
         {
-            "zone_name": "divestment_zone_3",
+            "zone_name": "DivestZone3",
             "camera_name": "demo_video",
             "coordinates": {
                 "type": "monoloco",
